@@ -1,0 +1,101 @@
+services:
+    proxy:
+        container_name: reverse_proxy
+        build:
+           context: ./scripts/nginx
+           dockerfile: Dockerfile
+        restart: always
+        depends_on:
+            - app_int
+            - app_prod
+            - pgadmin
+        networks:
+            - vaaskel_net
+        ports:
+            - "80:80"
+            - "443:443"
+
+    vaaskel:
+        image: vaaskel
+        build:
+            context: .
+            dockerfile: ./scripts/vaaskel/Dockerfile
+
+    app_int:
+        image: vaaskel
+        container_name: app_int
+        restart: always
+        depends_on:
+            - vaaskel
+            - database
+        environment:
+            SPRING_PROFILES_ACTIVE: int
+            CE_DB_URL: jdbc:postgresql://pg:5432/vaaskel_int
+            CE_DB_USER: root
+            CE_DB_PASSWORD: root
+        networks:
+            - vaaskel_net
+        logging:
+            options:
+                max-size: "100M"
+
+    app_prod:
+        image: vaaskel
+        container_name: app_prod
+        restart: always
+        depends_on:
+            - vaaskel
+            - database
+        environment:
+            SPRING_PROFILES_ACTIVE: prod
+            CE_DB_URL: jdbc:postgresql://pg:5432/vaaskel_prod
+            CE_DB_USER: root
+            CE_DB_PASSWORD: root
+        networks:
+            - vaaskel_net
+        logging:
+            options:
+                max-size: "100M"
+
+    database:
+        container_name: pg
+        image: postgres:latest
+        shm_size: 128mb
+        restart: always
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: postgres
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: root
+        networks:
+            - vaaskel_net
+        volumes:
+            - pgdata:/var/lib/postgresql
+
+    pgadmin:
+        container_name: pgadmin
+        image: dpage/pgadmin4:latest
+        restart: always
+        environment:
+            PGADMIN_DEFAULT_EMAIL: a@a.com
+            PGADMIN_DEFAULT_PASSWORD: root
+        depends_on:
+            - database
+        ports:
+            - "5050:80"
+        networks:
+            - vaaskel_net
+        volumes:
+            - pgadmin_data:/var/lib/pgadmin
+        logging:
+            options:
+                max-size: "100M"
+
+networks:
+    vaaskel_net:
+        name: vaaskel_net
+
+volumes:
+    pgdata:
+    pgadmin_data:

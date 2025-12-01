@@ -1,0 +1,18 @@
+logging:
+    level:
+        org:
+            atmosphere: warn
+server:
+    port: ${PORT:8080}
+spring:
+    datasource:
+        url: ${CE_DB_URL}
+        password: ${CE_DB_PASSWORD}
+        username: ${CE_DB_USER}
+    jpa:
+        defer-datasource-initialization: false
+        hibernate:
+            ddl-auto: none
+vaadin:
+    launch-browser: false
+    vaadin.allowed-packages: com.en

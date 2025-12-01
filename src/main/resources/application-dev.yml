@@ -1,0 +1,19 @@
+logging:
+    level:
+        org:
+            atmosphere: warn
+            hibernate.SQL: debug
+server:
+    port: ${PORT:8080}
+spring:
+    datasource:
+        url: jdbc:postgresql://localhost:5432/vaaskel_dev
+        password: root
+        username: root
+    jpa:
+        defer-datasource-initialization: true
+        hibernate:
+            ddl-auto: create-drop
+vaadin:
+    launch-browser: true
+    allowed-packages: com.vaaskel

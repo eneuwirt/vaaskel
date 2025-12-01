@@ -1,0 +1,18 @@
+logging:
+    level:
+        org:
+            atmosphere: warn
+server:
+    port: ${PORT:8080}
+spring:
+    datasource:
+        url: jdbc:postgresql://localhost:5432/vaaskel_int
+        password: root
+        username: root
+    jpa:
+        defer-datasource-initialization: false
+        hibernate:
+            ddl-auto: update
+vaadin:
+    launch-browser: true
+    vaadin.allowed-packages: com.en
