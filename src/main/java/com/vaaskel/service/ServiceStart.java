@@ -14,13 +14,13 @@ import java.util.logging.Logger;
 @Service
 public class ServiceStart {
     private static final Logger log = Logger.getLogger(ServiceStart.class.getName());
-    private final UserRepository repUser;
-    private final UserRoleRepository repUserRole;
+    private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
     private final BCryptPasswordEncoder encoder;
 
-    public ServiceStart(UserRepository rep, UserRoleRepository repUserRole) {
-        this.repUser = rep;
-        this.repUserRole = repUserRole;
+    public ServiceStart(UserRepository userRepository, UserRoleRepository userRoleRepository) {
+        this.userRepository = userRepository;
+        this.userRoleRepository = userRoleRepository;
         this.encoder = new BCryptPasswordEncoder();
     }
 
@@ -31,7 +31,7 @@ public class ServiceStart {
         //UserSettings settings;
 
 
-        if (this.repUser.count() > 0) {
+        if (this.userRepository.count() > 0) {
             log.warning(" >Init user already created");
 
             return;
@@ -47,18 +47,18 @@ public class ServiceStart {
         //user.setLastName("DELETE ME or Change Password ASAP");
         //user.setEmail("admin@ce-engineering.com");
         //user.setThruDate(LocalDate.now().plusDays(1));
-        this.repUser.save(user);
+        this.userRepository.save(user);
 
 
         role = new UserRole();
-        role.setRole(UserRoleType.ADMIN.name());
+        role.setUserRoleType(UserRoleType.ADMIN);
         role.setUser(user);
-        this.repUserRole.save(role);
+        this.userRoleRepository.save(role);
 
         role = new UserRole();
-        role.setRole(UserRoleType.USER.name());
+        role.setUserRoleType(UserRoleType.USER);
         role.setUser(user);
-        this.repUserRole.save(role);
+        this.userRoleRepository.save(role);
 
         //settings = new UserSettings();
         //settings.setUser(user);

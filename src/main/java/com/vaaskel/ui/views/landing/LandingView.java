@@ -12,9 +12,9 @@ import jakarta.annotation.security.PermitAll;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
 @PageTitle("Landing")
-@Route("empty")
-@Menu(order = 2, icon = LineAwesomeIconUrl.FILE)
+@Route("")
 @PermitAll
+@Menu(order = 2, icon = LineAwesomeIconUrl.FILE)
 public class LandingView extends VerticalLayout {
 
     public LandingView() {

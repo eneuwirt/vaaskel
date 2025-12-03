@@ -6,7 +6,8 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "USER_ROLES")
 public class UserRole extends AbstractEntity {
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserRoleType userRoleType;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
@@ -15,12 +16,12 @@ public class UserRole extends AbstractEntity {
     public UserRole() {
     }
 
-    public String getRole() {
-        return role;
+    public UserRoleType getUserRoleType() {
+        return userRoleType;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public void setUserRoleType(UserRoleType role) {
+        this.userRoleType = role;
     }
 
     public User getUser() {
