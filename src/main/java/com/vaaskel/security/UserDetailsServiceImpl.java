@@ -1,7 +1,7 @@
 package com.vaaskel.security;
 
-import com.vaaskel.domain.security.User;
-import com.vaaskel.domain.repository.UserRepository;
+import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;

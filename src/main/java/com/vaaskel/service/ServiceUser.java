@@ -1,7 +1,7 @@
 package com.vaaskel.service;
 
-import com.vaaskel.domain.security.User;
-import com.vaaskel.domain.repository.UserRepository;
+import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.repository.UserRepository;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

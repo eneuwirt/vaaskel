@@ -1,10 +1,10 @@
 package com.vaaskel.service;
 
-import com.vaaskel.domain.UserRoleType;
-import com.vaaskel.domain.security.User;
-import com.vaaskel.domain.security.UserRole;
-import com.vaaskel.domain.repository.UserRepository;
-import com.vaaskel.domain.repository.UserRoleRepository;
+import com.vaaskel.domain.security.entity.UserRoleType;
+import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.entity.UserRole;
+import com.vaaskel.domain.security.repository.UserRepository;
+import com.vaaskel.domain.security.repository.UserRoleRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;

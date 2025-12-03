@@ -1,6 +1,6 @@
 package com.vaaskel.ui.views;
 
-import com.vaaskel.domain.security.User;
+import com.vaaskel.domain.security.entity.User;
 import com.vaaskel.security.AuthenticatedUser;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -39,8 +39,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private H1 viewTitle;
 
-    private AuthenticatedUser authenticatedUser;
-    private AccessAnnotationChecker accessChecker;
+    private final AuthenticatedUser authenticatedUser;
+    private final AccessAnnotationChecker accessChecker;
 
     public MainLayout(AuthenticatedUser authenticatedUser, AccessAnnotationChecker accessChecker) {
         this.authenticatedUser = authenticatedUser;

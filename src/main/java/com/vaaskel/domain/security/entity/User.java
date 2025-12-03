@@ -1,6 +1,5 @@
-package com.vaaskel.domain.security;
+package com.vaaskel.domain.security.entity;
 
-import com.vaaskel.domain.UserRoleType;
 import com.vaaskel.domain.common.AbstractEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;

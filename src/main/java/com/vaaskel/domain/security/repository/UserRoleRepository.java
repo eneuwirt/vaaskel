@@ -1,7 +1,7 @@
-package com.vaaskel.domain.repository;
+package com.vaaskel.domain.security.repository;
 
-import com.vaaskel.domain.security.User;
-import com.vaaskel.domain.security.UserRole;
+import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.entity.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;

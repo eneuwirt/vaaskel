@@ -1,10 +1,10 @@
 package com.vaaskel.domain.common;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @MappedSuperclass
 public abstract class AbstractEntity {
@@ -15,6 +15,36 @@ public abstract class AbstractEntity {
 
     @Version
     private int version;
+
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    @CreationTimestamp
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "changed_at", columnDefinition = "TIMESTAMP")
+    @UpdateTimestamp
+    private LocalDateTime changedAt = LocalDateTime.now();
+
+    @Column(name = "read_only")
+    private boolean readOnly = false;
+
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    @Column(name = "visible")
+    private boolean visible = false;
 
     public Long getId() {
         return id;
@@ -46,5 +76,21 @@ public abstract class AbstractEntity {
             return getId().equals(that.getId());
         }
         return super.equals(that);
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getChangedAt() {
+        return changedAt;
+    }
+
+    public void setChangedAt(LocalDateTime changedAt) {
+        this.changedAt = changedAt;
     }
 }
