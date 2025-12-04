@@ -2,7 +2,7 @@ package com.vaaskel.service;
 
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.User;
-import com.vaaskel.domain.security.repository.UserRepository;
+import com.vaaskel.repository.security.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

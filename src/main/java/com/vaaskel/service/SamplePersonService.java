@@ -1,7 +1,7 @@
 package com.vaaskel.service;
 
 import com.vaaskel.domain.SamplePerson;
-import com.vaaskel.domain.repository.SamplePersonRepository;
+
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

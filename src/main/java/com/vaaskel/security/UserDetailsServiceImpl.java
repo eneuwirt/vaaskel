@@ -2,8 +2,8 @@ package com.vaaskel.security;
 
 import com.vaaskel.domain.security.entity.User;
 import com.vaaskel.domain.security.entity.UserRole;
-import com.vaaskel.domain.security.repository.UserRepository;
-import com.vaaskel.domain.security.repository.UserRoleRepository;
+import com.vaaskel.repository.security.UserRepository;
+import com.vaaskel.repository.security.UserRoleRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

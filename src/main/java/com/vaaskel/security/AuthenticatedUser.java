@@ -1,7 +1,7 @@
 package com.vaaskel.security;
 
 import com.vaaskel.domain.security.entity.User;
-import com.vaaskel.domain.security.repository.UserRepository;
+import com.vaaskel.repository.security.UserRepository;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import java.util.Optional;
 import org.springframework.security.core.userdetails.UserDetails;

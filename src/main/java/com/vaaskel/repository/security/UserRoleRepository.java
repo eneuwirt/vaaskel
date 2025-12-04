@@ -1,4 +1,4 @@
-package com.vaaskel.domain.security.repository;
+package com.vaaskel.repository.security;
 
 import com.vaaskel.domain.security.entity.User;
 import com.vaaskel.domain.security.entity.UserRole;
