@@ -72,6 +72,11 @@ services:
             - vaaskel_net
         volumes:
             - pgdata:/var/lib/postgresql
+        healthcheck:
+          test: [ "CMD-SHELL", "pg_isready -U root" ]
+          interval: 10s
+          timeout: 5s
+          retries: 5
 
     pgadmin:
         container_name: pgadmin
