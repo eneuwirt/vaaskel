@@ -1,121 +1,140 @@
-# vaaskel --- Vaadin Flow Walking Skeleton
+# Vaaskel -- Vaadin Walking Skeleton
 
-A minimal but complete **Vaadin Flow** walking skeleton. A clean
-structural baseline showing how a Vaadin + Spring Boot application is
-wired together --- nothing more, nothing less.
+**Vaaskel** is a minimal but fully functional **Vaadin 24 + Spring
+Boot** application designed as a *walking skeleton* --- a complete
+end-to-end architecture with clean layers, security, database
+integration, and Docker support.\
+It provides a solid foundation for building larger enterprise
+applications.
 
-## Purpose
+------------------------------------------------------------------------
 
-This project provides a technically minimal, production-ready baseline:
+## 🚀 Features
 
--   Vaadin **Flow** UI\
--   Spring Boot backend\
--   Simple navigation and starter view\
--   Basic service demonstrating backend → UI integration\
--   Clean Maven structure with Maven Wrapper\
--   Dockerfile + Docker Compose setup\
--   GitHub Actions CI pipeline (build + test)
+-   Vaadin 24 UI (SSR/SPA)
+-   Spring Boot backend
+-   Layered architecture (API, Domain, Repository, Service, Security,
+    UI)
+-   User authentication + role model
+-   PostgreSQL persistence
+-   Docker & docker-compose setup
+-   Production-ready Vaadin build pipeline
+-   Clean, maintainable package structure
 
-It is intentionally small: a skeleton with all layers connected.
+------------------------------------------------------------------------
 
-## Project Structure
+## 🧱 Architecture Overview
 
-    .
-    ├─ src/main/java/...   # Vaadin Flow views + backend services
-    ├─ src/main/resources/ # application.properties
-    ├─ src/test/java/...   # basic sanity tests
-    ├─ Dockerfile
-    ├─ docker-compose.yml
-    └─ pom.xml
-View Structure
-- `MainLayout.java` in `src/main/java` contains the navigation setup (i.e., the
-  side/top bar and the main menu). This setup uses [App Layout](https://vaadin.com/docs/components/app-layout).
-- `views` package in `src/main/java` contains the server-side Java views of your application.
-- `views` folder in `src/main/frontend` contains the client-side JavaScript views of your application.
-- `themes` folder in `src/main/frontend` contains the custom CSS styles.
-## Getting Started
+    com.vaaskel
+     ├── api/          → DTOs (UI/REST boundary)
+     ├── domain/       → Entities & domain objects
+     ├── repository/   → Spring Data repositories
+     ├── service/      → Business logic layer
+     ├── security/     → Auth + authorization
+     └── ui/           → Vaadin views, layouts, components
 
-Run locally:
+The project embraces a traditional, proven architecture that scales well
+for real business systems.
 
-    ./mvnw clean spring-boot:run
+------------------------------------------------------------------------
 
-Then open:
+## 🐳 Docker Setup
 
-    http://localhost:8080
+Vaaskel ships with a docker-compose environment supporting:
 
-## Build for Production
+-   **app** -- Spring Boot + Vaadin container\
+-   **postgres** -- database\
+-   **nginx (optional)** -- reverse proxy for production
 
-    ./mvnw clean package -Pproduction
+Run everything:
 
-Artifact:
-
-    target/vaaskel.jar
-
-## Docker Support
-
-### Build image
-
-    docker build -t vaaskel:latest .
-
-### Run with Docker Compose
-
-    docker compose up --build
-
-Service runs on:
-
-    http://localhost:8080
-
-**docker-compose.yml**
-
-``` yaml
-services:
-  vaaskel:
-    build: .
-    container_name: vaaskel
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
+``` bash
+docker compose up --build -d
 ```
 
-## GitHub Actions CI Pipeline
+------------------------------------------------------------------------
 
-Runs on every push: Maven build + tests.
+## ⚙️ Development
 
-**.github/workflows/ci.yml**
+Start the app in development mode:
 
-``` yaml
-name: CI
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Build with Maven
-        run: ./mvnw -B verify
+``` bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-## Requirements
+**Dev mode includes:**
 
--   Java **21+**\
--   Maven Wrapper (included)\
--   No Node.js required (Vaadin Flow uses the built-in toolchain)
+-   Vaadin hot reload\
+-   Development DB\
+-   Verbose logging\
+-   No UI minification
 
-## License
+------------------------------------------------------------------------
 
-MIT License.\
-Free to use, adapt, extend.
+## 🏭 Production Build
+
+Vaadin requires optimized frontend compilation for production.
+
+Build production JAR:
+
+``` bash
+mvn clean package -Pproduction
+```
+
+This runs:
+
+-   Vaadin frontend build\
+-   CSS/JS minification\
+-   Tree shaking\
+-   Packaging into a single runnable JAR
+
+Run:
+
+``` bash
+java -jar target/vaaskel-*.jar
+```
+
+------------------------------------------------------------------------
+
+## 🐳 Docker Production Build
+
+Multi-stage Dockerfile recommended:
+
+``` bash
+docker compose up --build -d
+```
+
+-   Stage 1: Maven + JDK → builds Vaadin production JAR\
+-   Stage 2: Slim JRE → runs the final artifact
+
+------------------------------------------------------------------------
+
+## 🔐 Security
+
+Included:
+
+-   Login view\
+-   User & role entities\
+-   UserRepository + UserRoleRepository\
+-   Custom UserDetailsService\
+-   Access control via annotations\
+-   UI navigation guard
+
+Production-ready authentication pipeline.
+
+------------------------------------------------------------------------
+
+## 🛣 Roadmap
+
+-   REST API module\
+-   Actuator endpoints\
+-   Role-based admin console\
+-   Internationalization\
+-   Modularization\
+-   Extended domain packages
+
+------------------------------------------------------------------------
+
+## 📄 License
+
+MIT License. You can use, modify, and distribute freely.
