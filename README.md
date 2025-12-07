@@ -1,163 +1,238 @@
-# Vaaskel -- Vaadin Walking Skeleton
+# Vaaskel — Vaadin Walking Skeleton
 
-**Vaaskel** is a minimal but fully functional **Vaadin 24 + Spring
-Boot** application designed as a *walking skeleton* --- a complete
-end-to-end architecture with clean layers, security, database
-integration, and Docker support.\
-It provides a solid foundation for building larger enterprise
-applications.
+![Java](https://img.shields.io/badge/Java-25-007396?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?logo=springboot)
+![Vaadin](https://img.shields.io/badge/Vaadin-24-blue?logo=vaadin)
+![Docker](https://img.shields.io/badge/Docker-enabled-2496ED?logo=docker)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-------------------------------------------------------------------------
+A minimal but fully functional **Vaadin 24 + Spring Boot** application designed as a *walking skeleton*: a complete end-to-end architecture with a clean domain model, security, PostgreSQL persistence, Docker-based environments, and optional Nginx reverse proxy with HTTPS.
 
-## 🚀 Features
+---
 
--   Vaadin 24 UI (SSR/SPA)
--   Spring Boot backend
--   Layered architecture (API, Domain, Repository, Service, Security,
-    UI)
--   User authentication + role model
--   PostgreSQL persistence
--   Docker & docker-compose setup
--   Production-ready Vaadin build pipeline
--   Clean, maintainable package structure
+# 📚 Table of Contents
+- [Features](#-features)
+- [Architecture Overview](#-architecture-overview)
+- [Docker & Environments](#-docker--environments)
+- [HTTPS & Nginx Reverse Proxy](#-https--nginx-reverse-proxy)
+- [Certificate Generation](#-certificate-generation-windows--docker--openssl)
+- [Development](#️-development)
+- [Production Build](#-production-build)
+- [Security](#-security)
+- [Branching Strategy](#-branching-strategy-github-flow)
+- [Roadmap](#-roadmap)
+- [License](#-license)
 
-------------------------------------------------------------------------
+---
 
-## 🧱 Architecture Overview
+# 🚀 Features
 
-    com.vaaskel
-     ├── api/          → DTOs (UI/REST boundary)
-     ├── domain/       → Entities & domain objects
-     ├── repository/   → Spring Data repositories
-     ├── service/      → Business logic layer
-     ├── security/     → Auth + authorization
-     └── ui/           → Vaadin views, layouts, components
+- Vaadin 24 UI (SSR/SPA)
+- Spring Boot backend
+- Layered, maintainable architecture
+- Authentication & authorization
+- PostgreSQL + Flyway migration
+- Multi-environment setup (dev, test, prod)
+- Docker & docker-compose ready
+- Optional HTTPS reverse proxy
+- Production build pipeline
 
-The project embraces a traditional, proven architecture that scales well
-for real business systems.
+---
 
-------------------------------------------------------------------------
+# 🧱 Architecture Overview
 
-## 🐳 Docker Setup
+```
+com.vaaskel
+ ├── api/          → DTOs & boundary objects
+ ├── domain/       → Entities & domain logic
+ ├── repository/   → Spring Data repositories
+ ├── service/      → Business logic
+ ├── security/     → Auth + authorization
+ └── ui/           → Vaadin views, layouts, components
+```
 
-Vaaskel ships with a docker-compose environment supporting:
+---
 
--   **app** -- Spring Boot + Vaadin container\
--   **postgres** -- database\
--   **nginx (optional)** -- reverse proxy for production
+# 🐳 Docker & Environments
 
-Run everything:
+Vaaskel includes three environments:
 
-``` bash
+- **dev** — local development, no proxy  
+- **test** — Docker integration environment (`vaaskel.test`)  
+- **prod** — Docker production environment (`vaaskel.prod`)
+
+### docker-compose services
+
+- `app_int` (test)
+- `app_prod` (production)
+- `postgres`
+- `proxy` (optional Nginx reverse proxy)
+
+Start all services:
+
+```bash
 docker compose up --build -d
 ```
 
-------------------------------------------------------------------------
+---
 
-## ⚙️ Development
+# 🔐 HTTPS & Nginx Reverse Proxy
 
-Start the app in development mode:
+Domains used locally:
 
-``` bash
+```
+https://vaaskel.test → app_int:8080  
+https://vaaskel.prod → app_prod:8080
+```
+
+Nginx handles:
+
+- TLS termination  
+- Domain-based routing  
+- Clean separation of front-facing and internal services  
+
+Configuration lives under:
+
+```
+scripts/nginx/default.conf
+scripts/nginx/includes/
+scripts/nginx/ssl/
+```
+
+---
+
+# 🔐 Certificate Generation (Windows + Docker + OpenSSL)
+
+Certificates are stored in:
+
+```
+scripts/nginx/ssl/
+```
+
+No local OpenSSL installation is required.  
+Use Docker to generate certificates.
+
+---
+
+## 1. Navigate to SSL directory
+
+```powershell
+cd D:\Dev\vaaskel\scripts\nginx\ssl
+```
+
+---
+
+## 2. Generate certificate for `vaaskel.test`
+
+```powershell
+docker run --rm -v D:\Dev\vaaskel\scripts\nginx\ssl:/ssl alpine sh -c "apk add --no-cache openssl && openssl req -x509 -nodes -newkey rsa:2048 -keyout /ssl/vaaskel.test-key.pem -out /ssl/vaaskel.test.pem -days 4096 -subj '/CN=vaaskel.test'"
+```
+
+---
+
+## 3. Generate certificate for `vaaskel.prod`
+
+```powershell
+docker run --rm -v D:\Dev\vaaskel\scripts\nginx\ssl:/ssl alpine sh -c "apk add --no-cache openssl && openssl req -x509 -nodes -newkey rsa:2048 -keyout /ssl/vaaskel.prod-key.pem -out /ssl/vaaskel.prod.pem -days 4096 -subj '/CN=vaaskel.prod'"
+```
+
+This produces:
+
+```
+vaaskel.test.pem
+vaaskel.test-key.pem
+vaaskel.prod.pem
+vaaskel.prod-key.pem
+```
+
+Restart proxy:
+
+```powershell
+docker compose restart proxy
+```
+
+---
+
+## 4. (Optional) Trust certificates on Windows
+
+To avoid browser warnings:
+
+1. Rename `.pem` → `.crt`
+2. Double-click  
+3. Install certificate  
+4. Choose **Local Machine**
+5. Store under **Trusted Root Certification Authorities**
+6. Restart browser
+
+---
+
+# ⚙️ Development
+
+Run locally:
+
+```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-**Dev mode includes:**
+Features:
 
--   Vaadin hot reload\
--   Development DB\
--   Verbose logging\
--   No UI minification
+- Vaadin hot reload  
+- Dev DB  
+- Verbose logging  
 
-------------------------------------------------------------------------
+---
 
-## 🏭 Production Build
+# 🏭 Production Build
 
-Vaadin requires optimized frontend compilation for production.
+Build optimized artifact:
 
-Build production JAR:
-
-``` bash
+```bash
 mvn clean package -Pproduction
 ```
 
-This runs:
-
--   Vaadin frontend build\
--   CSS/JS minification\
--   Tree shaking\
--   Packaging into a single runnable JAR
-
 Run:
 
-``` bash
+```bash
 java -jar target/vaaskel-*.jar
 ```
 
-------------------------------------------------------------------------
+---
 
-## 🐳 Docker Production Build
+# 🔐 Security
 
-Multi-stage Dockerfile recommended:
+Includes:
 
-``` bash
-docker compose up --build -d
-```
+- Login view  
+- User + role entities  
+- Custom UserDetailsService  
+- Password hashing  
+- Role-based access control  
+- UI navigation guard  
 
--   Stage 1: Maven + JDK → builds Vaadin production JAR\
--   Stage 2: Slim JRE → runs the final artifact
+---
 
-------------------------------------------------------------------------
+# 🧭 Branching Strategy (GitHub Flow)
 
-## 🔐 Security
+- `main` → always stable  
+- `feature/*` → new features  
+- `fix/*` → bug fixes  
+- `chore/*` → maintenance  
+- PR merging  
+- Releases via Git tags (`v1.0.0` etc.)
 
-Included:
+---
 
--   Login view\
--   User & role entities\
--   UserRepository + UserRoleRepository\
--   Custom UserDetailsService\
--   Access control via annotations\
--   UI navigation guard
+# 🛣 Roadmap
 
-Production-ready authentication pipeline.
+- REST API  
+- Admin console  
+- Internationalization  
+- Modularity  
+- Extended domain model  
+- Cloud deployment guides  
 
-------------------------------------------------------------------------
+---
 
-## Branching Strategy (GitHub Flow)
+# 📄 License
 
-Vaaskel uses a lightweight GitHub Flow model:
-
-- `main` is the only long-lived branch.  
-  It always contains a stable and releasable state of the application.
-
-- All development happens in short-lived branches created from `main`:
-    - `feature/<description>` for new functionality
-    - `fix/<description>` for bug fixes
-    - `chore/<description>` for maintenance or cleanup
-
-- Each change is merged back into `main` via Pull Request.  
-  Feature branches are deleted after merging.
-
-- Releases are created from `main` using annotated Git tags  
-  (`v1.0.0`, `v1.1.0`, …).  
-  Deployments should reference these tags.
-
-This strategy keeps the repository simple, predictable, and fully compatible with standard GitHub tooling and CI workflows.
-
-------------------------------------------------------------------------
-
-## 🛣 Roadmap
-
--   REST API module\
--   Actuator endpoints\
--   Role-based admin console\
--   Internationalization\
--   Modularization\
--   Extended domain packages
-
-------------------------------------------------------------------------
-
-## 📄 License
-
-MIT License. You can use, modify, and distribute freely.
+MIT License — free to use, modify, and distribute.
