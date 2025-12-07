@@ -124,6 +124,29 @@ Production-ready authentication pipeline.
 
 ------------------------------------------------------------------------
 
+## Branching Strategy (GitHub Flow)
+
+Vaaskel uses a lightweight GitHub Flow model:
+
+- `main` is the only long-lived branch.  
+  It always contains a stable and releasable state of the application.
+
+- All development happens in short-lived branches created from `main`:
+    - `feature/<description>` for new functionality
+    - `fix/<description>` for bug fixes
+    - `chore/<description>` for maintenance or cleanup
+
+- Each change is merged back into `main` via Pull Request.  
+  Feature branches are deleted after merging.
+
+- Releases are created from `main` using annotated Git tags  
+  (`v1.0.0`, `v1.1.0`, …).  
+  Deployments should reference these tags.
+
+This strategy keeps the repository simple, predictable, and fully compatible with standard GitHub tooling and CI workflows.
+
+------------------------------------------------------------------------
+
 ## 🛣 Roadmap
 
 -   REST API module\
