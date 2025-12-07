@@ -15,7 +15,7 @@ A minimal but fully functional **Vaadin 24 + Spring Boot** application designed 
 - [Architecture Overview](#-architecture-overview)
 - [Docker & Environments](#-docker--environments)
 - [HTTPS & Nginx Reverse Proxy](#-https--nginx-reverse-proxy)
-- [Certificate Generation](#-certificate-generation-windows--docker--openssl)
+- [Certificate Generation](#-certificate-generation)
 - [Development](#️-development)
 - [Production Build](#-production-build)
 - [Security](#-security)
@@ -101,68 +101,16 @@ scripts/nginx/ssl/
 
 ---
 
-# 🔐 Certificate Generation (Windows + Docker + OpenSSL)
+# 🔐 Certificate Generation
 
-Certificates are stored in:
-
-```
-scripts/nginx/ssl/
-```
-
-No local OpenSSL installation is required.  
-Use Docker to generate certificates.
-
----
-
-## 1. Navigate to SSL directory
-
-```powershell
-cd D:\Dev\vaaskel\scripts\nginx\ssl
-```
-
----
-
-## 2. Generate certificate for `vaaskel.test`
-
-```powershell
-docker run --rm -v D:\Dev\vaaskel\scripts\nginx\ssl:/ssl alpine sh -c "apk add --no-cache openssl && openssl req -x509 -nodes -newkey rsa:2048 -keyout /ssl/vaaskel.test-key.pem -out /ssl/vaaskel.test.pem -days 4096 -subj '/CN=vaaskel.test'"
-```
-
----
-
-## 3. Generate certificate for `vaaskel.prod`
-
-```powershell
-docker run --rm -v D:\Dev\vaaskel\scripts\nginx\ssl:/ssl alpine sh -c "apk add --no-cache openssl && openssl req -x509 -nodes -newkey rsa:2048 -keyout /ssl/vaaskel.prod-key.pem -out /ssl/vaaskel.prod.pem -days 4096 -subj '/CN=vaaskel.prod'"
-```
-
-This produces:
+Two self-signed certificates are required:
 
 ```
-vaaskel.test.pem
-vaaskel.test-key.pem
-vaaskel.prod.pem
-vaaskel.prod-key.pem
+scripts/nginx/ssl/vaaskel.test.pem
+scripts/nginx/ssl/vaaskel.test-key.pem
+scripts/nginx/ssl/vaaskel.prod.pem
+scripts/nginx/ssl/vaaskel.prod-key.pem
 ```
-
-Restart proxy:
-
-```powershell
-docker compose restart proxy
-```
-
----
-
-## 4. (Optional) Trust certificates on Windows
-
-To avoid browser warnings:
-
-1. Rename `.pem` → `.crt`
-2. Double-click  
-3. Install certificate  
-4. Choose **Local Machine**
-5. Store under **Trusted Root Certification Authorities**
-6. Restart browser
 
 ---
 
@@ -173,12 +121,6 @@ Run locally:
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
-
-Features:
-
-- Vaadin hot reload  
-- Dev DB  
-- Verbose logging  
 
 ---
 
