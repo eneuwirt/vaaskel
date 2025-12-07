@@ -15,8 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - run: echo "Checkout repository and build with Maven"
       - name: Checkout repository
         uses: actions/checkout@v4
+      - run: echo "Finished checkout"
 
       - name: Set up JDK
         uses: actions/setup-java@v4
