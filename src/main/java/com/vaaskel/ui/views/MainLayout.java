@@ -25,9 +25,6 @@ import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * The main view is a top-level placeholder for other views.
- */
 @Layout
 @PermitAll
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
@@ -44,11 +41,12 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
         addHeaderContent();
+        // removed enforceEnglishLocale();
     }
 
     private void addHeaderContent() {
         DrawerToggle toggle = new DrawerToggle();
-        toggle.setAriaLabel("Menu toggle");
+        toggle.setAriaLabel(getTranslation("main.menu.toggle"));
 
         viewTitle = new H1();
         viewTitle.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.NONE);
@@ -57,7 +55,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     }
 
     private void addDrawerContent() {
-        Span appName = new Span("App");
+        Span appName = new Span(getTranslation("app.name"));
         appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
         Header header = new Header(appName);
 
@@ -89,9 +87,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             User user = maybeUser.get();
 
             Avatar avatar = new Avatar(user.getUsername());
-            // StreamResource resource = new StreamResource("profile-pic",                    () -> new
-            // ByteArrayInputStream(user.getProfilePicture()));
-            // avatar.setImageResource(resource);
             avatar.setThemeName("xsmall");
             avatar.getElement().setAttribute("tabindex", "-1");
 
@@ -103,15 +98,17 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             div.add(avatar);
             div.add(user.getUsername());
             div.add(new Icon("lumo", "dropdown"));
-            div.addClassNames(LumoUtility.Display.FLEX, LumoUtility.AlignItems.CENTER, LumoUtility.Gap.SMALL);
+            div.addClassNames(
+                    LumoUtility.Display.FLEX,
+                    LumoUtility.AlignItems.CENTER,
+                    LumoUtility.Gap.SMALL
+            );
             userName.add(div);
-            userName.getSubMenu().addItem("Sign out", e -> {
-                authenticatedUser.logout();
-            });
+            userName.getSubMenu().addItem(getTranslation("user.signout"), e -> authenticatedUser.logout());
 
             layout.add(userMenu);
         } else {
-            Anchor loginLink = new Anchor("login", "Sign in");
+            Anchor loginLink = new Anchor("login", getTranslation("user.signin"));
             layout.add(loginLink);
         }
 
@@ -120,10 +117,35 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        viewTitle.setText(getCurrentPageTitle());
+
+        // Resolve localized page title (I18N)
+        String title = getCurrentPageTitle();
+
+        // Set title in header
+        viewTitle.setText(title);
+
+        // Set browser tab title
+        getUI().ifPresent(ui -> ui.getPage().setTitle(title));
     }
 
     private String getCurrentPageTitle() {
-        return MenuConfiguration.getPageHeader(getContent()).orElse("");
+        String keyOrTitle = MenuConfiguration.getPageHeader(getContent()).orElse("");
+
+        if (keyOrTitle == null || keyOrTitle.isEmpty()) {
+            return "";
+        }
+
+        // Try to translate the @PageTitle value as an I18N key
+        String translated = getTranslation(keyOrTitle);
+
+        // I18NProvider returns "!key!" if missing
+        String missingMarker = "!" + keyOrTitle + "!";
+
+        // Fallback to literal title if translation not found
+        if (missingMarker.equals(translated)) {
+            return keyOrTitle;
+        }
+
+        return translated;
     }
 }
