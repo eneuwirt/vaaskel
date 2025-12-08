@@ -22,7 +22,7 @@ services:
 #            dockerfile: ./scripts/vaaskel/Dockerfile
 
     app_int:
-        image: ghcr.io/eneuwirt/vaaskel:latest
+        image: ghcr.io/${GHCR_OWNER}/vaaskel:latest
         container_name: app_int
         restart: always
         depends_on:
@@ -39,7 +39,7 @@ services:
                 max-size: "100M"
 
     app_prod:
-        image: ghcr.io/eneuwirt/vaaskel:latest
+        image: ghcr.io/${GHCR_OWNER}/vaaskel:latest
         container_name: app_prod
         restart: always
         depends_on:
