@@ -6,9 +6,9 @@ server:
     port: ${PORT:8080}
 spring:
     datasource:
-        url: ${CE_DB_URL}
-        password: ${CE_DB_PASSWORD}
-        username: ${CE_DB_USER}
+      url: ${SPRING_DATASOURCE_URL}
+      password: ${SPRING_DATASOURCE_USERNAME}
+      username: ${SPRING_DATASOURCE_PASSWORD}
     jpa:
         defer-datasource-initialization: false
         hibernate:
