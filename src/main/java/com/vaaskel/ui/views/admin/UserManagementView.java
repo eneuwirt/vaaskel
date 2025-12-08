@@ -16,9 +16,9 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 /**
  * Admin view for managing users.
  */
-@PageTitle("User Management")
+@PageTitle("view.userManagement.title")
 @Route("admin_user")
-@Menu(order = 1, icon = LineAwesomeIconUrl.USER_SOLID)
+@Menu(order = 1, icon = LineAwesomeIconUrl.USER_SOLID, title = "User Management")
 @RolesAllowed("ADMIN")
 public class UserManagementView extends Div {
 
@@ -39,22 +39,22 @@ public class UserManagementView extends Div {
         grid.setSelectionMode(SelectionMode.SINGLE);
 
         grid.addColumn(UserDto::getId)
-                .setHeader("ID")
+                .setHeader(getTranslation("view.userManagement.grid.id"))
                 .setAutoWidth(true)
                 .setSortable(true);
 
         grid.addColumn(UserDto::getUsername)
-                .setHeader("Username")
+                .setHeader(getTranslation("view.userManagement.grid.username"))
                 .setAutoWidth(true)
                 .setSortable(true);
 
         grid.addColumn(DateTimeRenderers.localDateTimeRenderer(UserDto::getChangedAt))
-                .setHeader("Changed at")
+                .setHeader(getTranslation("view.userManagement.grid.changedAt"))
                 .setAutoWidth(true)
                 .setSortable(true);
 
         grid.addColumn(DateTimeRenderers.localDateTimeRenderer(UserDto::getCreatedAt))
-                .setHeader("Created at")
+                .setHeader(getTranslation("view.userManagement.grid.createdAt"))
                 .setAutoWidth(true)
                 .setSortable(true);
 
@@ -70,7 +70,7 @@ public class UserManagementView extends Div {
                 };
 
         CallbackDataProvider.CountCallback<UserDto, Void> countCallback =
-                query -> (int) userService.countUsers(); // safe if you don't have millions yet
+                query -> (int) userService.countUsers();
 
         grid.setDataProvider(new CallbackDataProvider<>(fetchCallback, countCallback));
     }
