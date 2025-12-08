@@ -10,9 +10,18 @@ spring:
         password: ${SPRING_DATASOURCE_USERNAME}
         username: ${SPRING_DATASOURCE_PASSWORD}
     jpa:
-        defer-datasource-initialization: false
+      hibernate:
+        ddl-auto: validate         # JPA only validates schema against entities
+      properties:
         hibernate:
-            ddl-auto: update
+          format_sql: true        # Pretty-print generated SQL
+          show_sql: false         # Set to true if you want Hibernate SQL logged
+    liquibase:
+      enabled: false                 # Liquibase is disabled because Flyway manages schema migrations
+    flyway:
+      enabled: true                   # Global Flyway switch; environment profiles may override this
+      locations: classpath:db/migration
+      clean-disabled: true      # Never allow Flyway clean in INT/PROD
 vaadin:
     launch-browser: false
-    vaadin.allowed-packages: com.en
+    vaadin.allowed-packages: com.vaaskel
