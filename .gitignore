@@ -6,6 +6,9 @@
 .classpath
 .env
 
+# ignore pgdump files
+schema.sql
+
 *.iml
 .DS_Store
 
