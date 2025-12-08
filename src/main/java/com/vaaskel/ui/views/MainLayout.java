@@ -55,7 +55,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     }
 
     private void addDrawerContent() {
-        Span appName = new Span(getTranslation("app.name"));
+        Span appName = new Span(getTranslation("main.app.name"));
         appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
         Header header = new Header(appName);
 
@@ -104,11 +104,11 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                     LumoUtility.Gap.SMALL
             );
             userName.add(div);
-            userName.getSubMenu().addItem(getTranslation("user.signout"), e -> authenticatedUser.logout());
+            userName.getSubMenu().addItem(getTranslation("main.user.signout"), e -> authenticatedUser.logout());
 
             layout.add(userMenu);
         } else {
-            Anchor loginLink = new Anchor("login", getTranslation("user.signin"));
+            Anchor loginLink = new Anchor("login", getTranslation("main.user.signin"));
             layout.add(loginLink);
         }
 
