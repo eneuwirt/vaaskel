@@ -1,0 +1,15 @@
+spring:
+  # Let Spring Boot use the embedded H2 database for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+  flyway:
+    # Disable Flyway for tests, Hibernate will create the schema
+    enabled: false
+logging:
+  level:
+    org.hibernate.SQL: warn
