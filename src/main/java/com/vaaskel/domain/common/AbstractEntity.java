@@ -14,7 +14,7 @@ public abstract class AbstractEntity {
     private Long id;
 
     @Version
-    private int version;
+    private Integer version;
 
     @Column(name = "created_at", columnDefinition = "TIMESTAMP")
     @CreationTimestamp
@@ -54,29 +54,36 @@ public abstract class AbstractEntity {
         this.id = id;
     }
 
-    public int getVersion() {
+    public Integer getVersion() {
         return version;
     }
 
-    @Override
-    public int hashCode() {
-        if (getId() != null) {
-            return getId().hashCode();
-        }
-
-        return super.hashCode();
+    public void setVersion(Integer version) {
+        this.version = version;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof AbstractEntity that)) {
-            return false; // null or not an AbstractEntity class
+        if (this == obj) return true;
+        if (obj == null) return false;
+
+        // Enforce same class
+        if (getClass() != obj.getClass()) return false;
+
+        AbstractEntity other = (AbstractEntity) obj;
+
+        if (id == null || other.id == null) {
+            return false; // two transient entities are never equal
         }
-        if (getId() != null) {
-            return getId().equals(that.getId());
-        }
-        return super.equals(that);
+
+        return id.equals(other.id);
     }
+
+    @Override
+    public int hashCode() {
+        return (id == null) ? System.identityHashCode(this) : id.hashCode();
+    }
+
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
