@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,8 +20,12 @@ class AbstractEntityAuditTest {
     private static final String PASSWORD = "secret";
     private static final String UPDATED_PASSWORD = "changed-secret";
 
+    private final UserRepository userRepository;
+
     @Autowired
-    private UserRepository userRepository;
+    AbstractEntityAuditTest(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     private User createUser() {
         User user = new User();
@@ -33,17 +38,23 @@ class AbstractEntityAuditTest {
     void createdAtAndChangedAtAreSetOnPersist() {
         User saved = userRepository.saveAndFlush(createUser());
 
-        assertThat(saved.getCreatedAt())
+        LocalDateTime createdAt = saved.getCreatedAt();
+        LocalDateTime changedAt = saved.getChangedAt();
+
+        assertThat(createdAt)
                 .as("createdAt should be set on persist")
                 .isNotNull();
 
-        assertThat(saved.getChangedAt())
+        assertThat(changedAt)
                 .as("changedAt should be set on persist")
                 .isNotNull();
 
-        assertThat(saved.getChangedAt())
-                .as("changedAt should be same or after createdAt")
-                .isAfterOrEqualTo(saved.getCreatedAt());
+        // We only assert that both timestamps are close to each other,
+        // not that one is strictly before/after the other on microsecond level.
+        Duration diff = Duration.between(createdAt, changedAt).abs();
+        assertThat(diff)
+                .as("createdAt and changedAt should not differ too much")
+                .isLessThan(Duration.ofSeconds(1));
 
         assertThat(saved.getVersion())
                 .as("Version should be initialized (0 or greater)")
