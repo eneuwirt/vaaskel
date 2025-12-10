@@ -14,7 +14,7 @@ public abstract class AbstractEntity {
     private Long id;
 
     @Version
-    private Integer version;
+    private Long version;
 
     @Column(name = "created_at", columnDefinition = "TIMESTAMP")
     @CreationTimestamp
@@ -54,11 +54,11 @@ public abstract class AbstractEntity {
         this.id = id;
     }
 
-    public Integer getVersion() {
+    public Long getVersion() {
         return version;
     }
 
-    public void setVersion(Integer version) {
+    public void setVersion(Long version) {
         this.version = version;
     }
 
