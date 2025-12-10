@@ -7,7 +7,12 @@ import jakarta.persistence.*;
 import java.util.Set;
 
 @Entity
-@Table(name = "USERS")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "ux_users_user_name", columnList = "user_name", unique = true)
+        }
+)
 public class User extends AbstractEntity {
     @Column(name="user_name")
     private String username;
