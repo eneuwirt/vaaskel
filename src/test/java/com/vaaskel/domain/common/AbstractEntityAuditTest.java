@@ -68,7 +68,7 @@ class AbstractEntityAuditTest {
 
         LocalDateTime oldCreatedAt = saved.getCreatedAt();
         LocalDateTime oldChangedAt = saved.getChangedAt();
-        Integer initialVersion = saved.getVersion();
+        Long initialVersion = saved.getVersion();
 
         saved.setPassword(UPDATED_PASSWORD);
 

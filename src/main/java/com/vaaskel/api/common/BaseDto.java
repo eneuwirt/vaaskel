@@ -13,7 +13,7 @@ public abstract class BaseDto {
     private Long id;
 
     /** Optimistic locking version */
-    private int version;
+    private Long version;
 
     /** Timestamp when the object was created */
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -35,11 +35,11 @@ public abstract class BaseDto {
         this.id = id;
     }
 
-    public int getVersion() {
+    public Long getVersion() {
         return version;
     }
 
-    public void setVersion(int version) {
+    public void setVersion(Long version) {
         this.version = version;
     }
 

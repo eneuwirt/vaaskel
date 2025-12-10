@@ -1,9 +1,17 @@
 package com.vaaskel.ui.views.admin;
 
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.SelectionMode;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.CallbackDataProvider;
+import com.vaadin.flow.data.provider.ConfigurableFilterDataProvider;
+import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -13,31 +21,77 @@ import com.vaaskel.ui.util.DateTimeRenderers;
 import jakarta.annotation.security.RolesAllowed;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
-/**
- * Admin view for managing users.
- */
-@PageTitle("view.userManagement.title")
-@Route("admin_user")
-@Menu(order = 1, icon = LineAwesomeIconUrl.USER_SOLID, title = "User Management")
+@Route(value = "admin/users")
+@PageTitle("User Management")
+@Menu(order = 10, icon = LineAwesomeIconUrl.USER_SOLID)
 @RolesAllowed("ADMIN")
 public class UserManagementView extends Div {
 
-    private final Grid<UserDto> grid = new Grid<>(UserDto.class, false);
     private final UserService userService;
+
+    // Grid and UI components
+    private final Grid<UserDto> grid = new Grid<>(UserDto.class, false);
+    private final Button newUserButton = new Button();
+    private final TextField usernameFilter = new TextField();
+
+    // Data provider with filter support
+    private ConfigurableFilterDataProvider<UserDto, Void, String> dataProvider;
 
     public UserManagementView(UserService userService) {
         this.userService = userService;
 
-        addClassName("user-management-view");
+        setSizeFull();
+        getStyle().set("display", "flex");
+        getStyle().set("flex-direction", "column");
 
         configureGrid();
         configureDataProvider();
-        formatView();
+
+        HorizontalLayout toolbar = buildToolbar();
+
+        grid.setSizeFull();
+        add(toolbar, grid);
     }
+
+    private HorizontalLayout buildToolbar() {
+        // "New user" button (I18N)
+        newUserButton.setText(getTranslation("view.userManagement.newUser"));
+        newUserButton.setIcon(VaadinIcon.PLUS.create());
+        newUserButton.addClickListener(e -> navigateToNewUser());
+
+        // Username filter (I18N)
+        usernameFilter.setPlaceholder(getTranslation("view.userManagement.username.search"));
+        usernameFilter.setClearButtonVisible(true);
+        usernameFilter.setWidth("250px");
+        usernameFilter.setValueChangeMode(ValueChangeMode.LAZY);
+        usernameFilter.addValueChangeListener(e -> applyFilter());
+
+        // Toolbar layout
+        HorizontalLayout toolbar = new HorizontalLayout(newUserButton, usernameFilter);
+        toolbar.setWidthFull();
+        toolbar.setAlignItems(Alignment.END);
+        toolbar.expand(usernameFilter);
+
+        return toolbar;
+    }
+
+    private void applyFilter() {
+        if (dataProvider == null) {
+            return;
+        }
+        String filterValue = usernameFilter.getValue();
+        dataProvider.setFilter(
+                (filterValue == null || filterValue.isBlank())
+                        ? null
+                        : filterValue.trim()
+        );
+    }
+
 
     private void configureGrid() {
         grid.setSelectionMode(SelectionMode.SINGLE);
 
+        // Grid columns (I18N headers)
         grid.addColumn(UserDto::getId)
                 .setHeader(getTranslation("view.userManagement.grid.id"))
                 .setAutoWidth(true)
@@ -53,31 +107,56 @@ public class UserManagementView extends Div {
                 .setAutoWidth(true)
                 .setSortable(true);
 
-        grid.addColumn(DateTimeRenderers.localDateTimeRenderer(UserDto::getCreatedAt))
-                .setHeader(getTranslation("view.userManagement.grid.createdAt"))
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.getColumns().forEach(column -> column.setAutoWidth(true));
+        // Double-click → open user edit view
+        grid.addItemDoubleClickListener(event -> {
+            UserDto item = event.getItem();
+            if (item != null && item.getId() != null) {
+                navigateToEditUser(item.getId());
+            }
+        });
     }
 
     private void configureDataProvider() {
-        CallbackDataProvider.FetchCallback<UserDto, Void> fetchCallback =
-                query -> {
-                    int offset = query.getOffset();
-                    int limit = query.getLimit();
-                    return userService.findUsers(offset, limit).stream();
-                };
+        CallbackDataProvider.FetchCallback<UserDto, String> fetchCallback = query -> {
+            int offset = query.getOffset();
+            int limit = query.getLimit();
+            String filter = query.getFilter().orElse(null);
 
-        CallbackDataProvider.CountCallback<UserDto, Void> countCallback =
-                query -> (int) userService.countUsers();
+            if (filter == null || filter.isBlank()) {
+                return userService.findUsers(offset, limit).stream();
+            } else {
+                return userService.findUsersByUsername(filter.trim(), offset, limit).stream();
+            }
+        };
 
-        grid.setDataProvider(new CallbackDataProvider<>(fetchCallback, countCallback));
+        CallbackDataProvider.CountCallback<UserDto, String> countCallback = query -> {
+            String filter = query.getFilter().orElse(null);
+
+            if (filter == null || filter.isBlank()) {
+                return (int) userService.countUsers();
+            } else {
+                return (int) userService.countUsersByUsername(filter.trim());
+            }
+        };
+
+        // Create the underlying callback data provider
+        var callbackDataProvider =
+                DataProvider.fromFilteringCallbacks(fetchCallback, countCallback);
+
+        // Wrap it into a configurable filter data provider
+        dataProvider = callbackDataProvider.withConfigurableFilter();
+
+        // Use the configurable data provider for the grid
+        grid.setDataProvider(dataProvider);
     }
 
-    private void formatView() {
-        add(grid);
-        grid.setSizeFull();
-        setSizeFull();
+    private void navigateToNewUser() {
+        // Navigate to the new user creation view (edit view in "create" mode)
+        getUI().ifPresent(ui -> ui.navigate("admin/users/new"));
+    }
+
+    private void navigateToEditUser(Long userId) {
+        // Navigate to existing user edit view
+        getUI().ifPresent(ui -> ui.navigate("admin/users/" + userId));
     }
 }

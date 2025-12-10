@@ -9,11 +9,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-/**
- * Default implementation of UserService.
- */
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -40,7 +37,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll(pageable)
                 .stream()
                 .map(this::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -48,10 +45,86 @@ public class UserServiceImpl implements UserService {
         return userRepository.count();
     }
 
+    @Override
+    public List<UserDto> findUsersByUsername(String username, int offset, int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+
+        String filter = username != null ? username.trim() : "";
+        if (filter.isEmpty()) {
+            // Delegate to generic method if no filter is provided
+            return findUsers(offset, limit);
+        }
+
+        int page = offset / limit;
+
+        Pageable pageable = PageRequest.of(
+                page,
+                limit,
+                Sort.by(Sort.Direction.ASC, "id") // keep sort consistent with findUsers
+        );
+
+        return userRepository
+                .findByUsernameContainingIgnoreCase(filter, pageable)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Override
+    public long countUsersByUsername(String username) {
+        String filter = username != null ? username.trim() : "";
+        if (filter.isEmpty()) {
+            // Delegate to generic count if no filter is provided
+            return countUsers();
+        }
+
+        return userRepository.countByUsernameContainingIgnoreCase(filter);
+    }
+
+    @Override
+    public Optional<UserDto> findUserById(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        return userRepository.findById(id)
+                .map(this::toDto);
+    }
+
+    @Override
+    public UserDto saveUser(UserDto dto) {
+        // Map DTO to entity
+        User entity;
+
+        if (dto.getId() != null) {
+            entity = userRepository.findById(dto.getId())
+                    .orElse(new User());
+        } else {
+            entity = new User();
+        }
+
+        // Base fields (only if they should be updated manually)
+        // Version is handled by JPA
+        entity.setVisible(dto.isVisible());
+        entity.setReadOnly(dto.isReadOnly());
+
+        // User-specific fields
+        entity.setUsername(dto.getUsername());
+        // entity.setName(dto.getName());  // if needed
+        // entity.setProfilePicture(dto.getProfilePicture());
+
+        User saved = userRepository.save(entity);
+
+        return toDto(saved);
+    }
+
+
     private UserDto toDto(User user) {
         UserDto dto = new UserDto();
 
-        // BaseDto fields (assuming UserDto extends BaseDto)
+        // BaseDto-style fields (adapt to your actual base class)
         dto.setId(user.getId());
         dto.setVersion(user.getVersion());
         dto.setCreatedAt(user.getCreatedAt());
@@ -61,6 +134,7 @@ public class UserServiceImpl implements UserService {
 
         // User-specific fields
         dto.setUsername(user.getUsername());
+        // dto.setName(user.getName());              // if the DTO has a name field
         // dto.setProfilePicture(user.getProfilePicture()); // if needed later
 
         return dto;
