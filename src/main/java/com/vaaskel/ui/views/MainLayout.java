@@ -90,10 +90,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         if (maybeUser.isPresent()) {
             User user = maybeUser.get();
 
-            // Load settings and apply theme once per UI
-            var settings = userSettingsService.getOrCreate(user);
-            getUI().ifPresent(ui -> ThemeApplier.apply(ui, settings.getThemePreference()));
-
             Avatar avatar = new Avatar(user.getUsername());
             avatar.setThemeName("xsmall");
             avatar.getElement().setAttribute("tabindex", "-1");
@@ -110,9 +106,12 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             // Theme submenu
             MenuItem themeRoot = userName.getSubMenu().addItem(getTranslation("main.user.theme"));
 
-            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.system"), e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.SYSTEM));
-            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.light"),  e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.LIGHT));
-            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.dark"),   e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.DARK));
+            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.system"),
+                    e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.SYSTEM));
+            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.light"),
+                    e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.LIGHT));
+            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.dark"),
+                    e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.DARK));
 
             userName.getSubMenu().add(new Hr());
             userName.getSubMenu().addItem(getTranslation("main.user.signout"), e -> authenticatedUser.logout());
@@ -120,7 +119,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             layout.add(userMenu);
         } else {
             // Not logged in: follow system preference with fallback to dark
-            getUI().ifPresent(ui -> ThemeApplier.apply(ui, com.vaaskel.domain.settings.ThemePreference.SYSTEM));
             Anchor loginLink = new Anchor("login", getTranslation("main.user.signin"));
             layout.add(loginLink);
         }

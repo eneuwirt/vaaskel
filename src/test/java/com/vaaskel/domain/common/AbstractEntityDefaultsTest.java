@@ -2,9 +2,11 @@ package com.vaaskel.domain.common;
 
 import com.vaaskel.domain.security.entity.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 class AbstractEntityDefaultsTest {
 
     @Test

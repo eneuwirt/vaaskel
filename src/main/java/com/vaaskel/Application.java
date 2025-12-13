@@ -21,7 +21,7 @@ public class Application implements AppShellConfigurator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 }
