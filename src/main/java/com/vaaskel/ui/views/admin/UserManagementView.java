@@ -41,8 +41,6 @@ public class UserManagementView extends Div {
         this.userService = userService;
 
         setSizeFull();
-        getStyle().set("display", "flex");
-        getStyle().set("flex-direction", "column");
 
         configureGrid();
         configureDataProvider();
@@ -57,14 +55,13 @@ public class UserManagementView extends Div {
         // "New user" button (I18N)
         newUserButton.setText(getTranslation("view.userManagement.newUser"));
         newUserButton.setIcon(VaadinIcon.PLUS.create());
-        newUserButton.addClickListener(e -> navigateToNewUser());
+        newUserButton.addClickListener(_ -> navigateToNewUser());
 
         // Username filter (I18N)
         usernameFilter.setPlaceholder(getTranslation("view.userManagement.username.search"));
         usernameFilter.setClearButtonVisible(true);
-        usernameFilter.setWidth("250px");
         usernameFilter.setValueChangeMode(ValueChangeMode.LAZY);
-        usernameFilter.addValueChangeListener(e -> applyFilter());
+        usernameFilter.addValueChangeListener(_ -> applyFilter());
 
         // Toolbar layout
         HorizontalLayout toolbar = new HorizontalLayout(newUserButton, usernameFilter);
@@ -103,7 +100,7 @@ public class UserManagementView extends Div {
                 .setSortable(true);
 
         grid.addColumn(DateTimeRenderers.localDateTimeRenderer(UserDto::getChangedAt))
-                .setHeader(getTranslation("view.userManagement.grid.changedAt"))
+                .setHeader(getTranslation("changedAt"))
                 .setAutoWidth(true)
                 .setSortable(true);
 
