@@ -20,6 +20,8 @@ import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaaskel.domain.security.entity.User;
 import com.vaaskel.security.AuthenticatedUser;
+import com.vaaskel.service.settings.UserSettingsService;
+import com.vaaskel.ui.theme.ThemeApplier;
 import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
@@ -28,20 +30,22 @@ import java.util.Optional;
 @Layout
 @PermitAll
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
+    private final UserSettingsService userSettingsService;
 
     private H1 viewTitle;
 
     private final AuthenticatedUser authenticatedUser;
     private final AccessAnnotationChecker accessChecker;
 
-    public MainLayout(AuthenticatedUser authenticatedUser, AccessAnnotationChecker accessChecker) {
+    public MainLayout(UserSettingsService userSettingsService, AuthenticatedUser authenticatedUser,
+            AccessAnnotationChecker accessChecker) {
+        this.userSettingsService = userSettingsService;
         this.authenticatedUser = authenticatedUser;
         this.accessChecker = accessChecker;
 
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
         addHeaderContent();
-        // removed enforceEnglishLocale();
     }
 
     private void addHeaderContent() {
@@ -86,6 +90,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         if (maybeUser.isPresent()) {
             User user = maybeUser.get();
 
+            // Load settings and apply theme once per UI
+            var settings = userSettingsService.getOrCreate(user);
+            getUI().ifPresent(ui -> ThemeApplier.apply(ui, settings.getThemePreference()));
+
             Avatar avatar = new Avatar(user.getUsername());
             avatar.setThemeName("xsmall");
             avatar.getElement().setAttribute("tabindex", "-1");
@@ -95,25 +103,36 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
             MenuItem userName = userMenu.addItem("");
             Div div = new Div();
-            div.add(avatar);
-            div.add(user.getUsername());
-            div.add(new Icon("lumo", "dropdown"));
-            div.addClassNames(
-                    LumoUtility.Display.FLEX,
-                    LumoUtility.AlignItems.CENTER,
-                    LumoUtility.Gap.SMALL
-            );
+            div.add(avatar, new Span(user.getUsername()), new Icon("lumo", "dropdown"));
+            div.addClassNames(LumoUtility.Display.FLEX, LumoUtility.AlignItems.CENTER, LumoUtility.Gap.SMALL);
             userName.add(div);
+
+            // Theme submenu
+            MenuItem themeRoot = userName.getSubMenu().addItem(getTranslation("main.user.theme"));
+
+            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.system"), e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.SYSTEM));
+            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.light"),  e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.LIGHT));
+            themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.dark"),   e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.DARK));
+
+            userName.getSubMenu().add(new Hr());
             userName.getSubMenu().addItem(getTranslation("main.user.signout"), e -> authenticatedUser.logout());
 
             layout.add(userMenu);
         } else {
+            // Not logged in: follow system preference with fallback to dark
+            getUI().ifPresent(ui -> ThemeApplier.apply(ui, com.vaaskel.domain.settings.ThemePreference.SYSTEM));
             Anchor loginLink = new Anchor("login", getTranslation("main.user.signin"));
             layout.add(loginLink);
         }
 
         return layout;
     }
+
+    private void setTheme(User user, com.vaaskel.domain.settings.ThemePreference pref) {
+        userSettingsService.updateTheme(user, pref);
+        getUI().ifPresent(ui -> ThemeApplier.apply(ui, pref));
+    }
+
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {

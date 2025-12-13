@@ -16,7 +16,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@Theme(value = "vaaskel", variant = Lumo.DARK)
+@Theme(value = "vaaskel")
 public class Application implements AppShellConfigurator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);

@@ -1,8 +1,7 @@
-package com.vaaskel.service;
+package com.vaaskel.service.user;
 
 import com.vaaskel.api.user.UserDto;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 

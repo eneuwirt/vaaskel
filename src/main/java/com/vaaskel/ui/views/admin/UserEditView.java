@@ -16,7 +16,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaaskel.api.user.UserDto;
-import com.vaaskel.service.UserService;
+import com.vaaskel.service.user.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 

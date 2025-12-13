@@ -1,4 +1,4 @@
-package com.vaaskel.service;
+package com.vaaskel.service.user;
 
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.User;
