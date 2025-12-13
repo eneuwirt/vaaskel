@@ -23,5 +23,5 @@ spring:
       enabled: true                # Global Flyway switch; environment profiles may override this
       locations: classpath:db/migration
 vaadin:
-    launch-browser: true
     allowed-packages: com.vaaskel
+    launch-browser: true
