@@ -3,6 +3,7 @@ package com.vaaskel.service;
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.User;
 import com.vaaskel.repository.security.UserRepository;
+import com.vaaskel.service.user.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
