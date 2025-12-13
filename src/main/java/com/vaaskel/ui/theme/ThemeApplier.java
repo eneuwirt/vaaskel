@@ -9,7 +9,9 @@ public final class ThemeApplier {
     private ThemeApplier() {}
 
     public static void apply(UI ui, ThemePreference pref) {
-        if (pref == null) pref = ThemePreference.SYSTEM;
+        if (pref == null) {
+            pref = ThemePreference.SYSTEM;
+        }
 
         // Always clear explicit theme first to avoid "sticking"
         ui.getElement().removeAttribute("theme");
