@@ -13,7 +13,7 @@ public class UserSettings extends AbstractEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "THEME_PREFERENCE", nullable = false, length = 16)
-    private ThemePreference themePreference = ThemePreference.DARK;
+    private ThemePreference themePreference = ThemePreference.SYSTEM;
 
     protected UserSettings() {}
 
