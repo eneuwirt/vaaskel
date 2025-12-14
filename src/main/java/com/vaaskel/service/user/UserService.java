@@ -1,9 +1,11 @@
 package com.vaaskel.service.user;
 
 import com.vaaskel.api.user.UserDto;
+import com.vaaskel.domain.security.entity.UserRoleType;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for querying user data for the UI and API layers.
@@ -52,4 +54,17 @@ public interface UserService {
 
 
     UserDto saveUser(UserDto user);
+
+    /**
+     * Admin-only: resets a user's password without requiring the current password.
+     *
+     * @param userId     id of the user
+     * @param rawPassword new raw password (will be encoded)
+     * @return updated user dto
+     */
+    UserDto resetPassword(Long userId, String rawPassword);
+
+    Set<UserRoleType> getUserRoles(Long userId);
+
+    void setUserRoles(Long userId, Set<UserRoleType> roles);
 }

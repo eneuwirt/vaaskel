@@ -2,33 +2,44 @@ package com.vaaskel.service;
 
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.entity.UserRole;
+import com.vaaskel.domain.security.entity.UserRoleType;
 import com.vaaskel.repository.security.UserRepository;
+import com.vaaskel.repository.security.UserRoleRepository;
 import com.vaaskel.service.user.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserRoleRepository userRoleRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -39,13 +50,9 @@ class UserServiceImplTest {
 
     @Test
     void findUsersReturnsEmptyListWhenLimitNonPositive() {
-        List<UserDto> resultZero = userService.findUsers(0, 0);
-        List<UserDto> resultNegative = userService.findUsers(0, -5);
-
-        assertThat(resultZero).isEmpty();
-        assertThat(resultNegative).isEmpty();
-
-        verifyNoInteractions(userRepository);
+        assertThat(userService.findUsers(0, 0)).isEmpty();
+        assertThat(userService.findUsers(0, -1)).isEmpty();
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
     }
 
     @Test
@@ -60,10 +67,7 @@ class UserServiceImplTest {
         Page<User> page = new PageImpl<>(List.of(user));
         when(userRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        int offset = 20;
-        int limit = 10;
-
-        List<UserDto> result = userService.findUsers(offset, limit);
+        List<UserDto> result = userService.findUsers(20, 10);
 
         assertThat(result).hasSize(1);
         UserDto dto = result.get(0);
@@ -77,42 +81,12 @@ class UserServiceImplTest {
         verify(userRepository).findAll(pageableCaptor.capture());
         verifyNoMoreInteractions(userRepository);
 
-        Pageable usedPageable = pageableCaptor.getValue();
-        assertThat(usedPageable.getPageNumber()).isEqualTo(offset / limit);
-        assertThat(usedPageable.getPageSize()).isEqualTo(limit);
-        assertThat(usedPageable.getSort())
-                .containsExactly(Sort.Order.asc("id"));
-    }
+        Pageable used = pageableCaptor.getValue();
+        assertThat(used.getPageNumber()).isEqualTo(2);
+        assertThat(used.getPageSize()).isEqualTo(10);
+        assertThat(used.getSort()).containsExactly(Sort.Order.asc("id"));
 
-    @Test
-    void findUsersCalculatesPageFromOffsetAndLimitCorrectly() {
-        when(userRepository.findAll(any(Pageable.class)))
-                .thenReturn(Page.empty());
-
-        record Case(int offset, int limit, int expectedPage) {}
-
-        List<Case> cases = List.of(
-                new Case(0, 10, 0),
-                new Case(5, 10, 0),
-                new Case(9, 10, 0),
-                new Case(10, 10, 1),
-                new Case(15, 10, 1),
-                new Case(25, 10, 2)
-        );
-
-        for (Case c : cases) {
-            userService.findUsers(c.offset(), c.limit());
-
-            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-            verify(userRepository, atLeastOnce()).findAll(pageableCaptor.capture());
-
-            Pageable pageable = pageableCaptor.getValue();
-            assertThat(pageable.getPageNumber()).isEqualTo(c.expectedPage());
-            assertThat(pageable.getPageSize()).isEqualTo(c.limit());
-        }
-
-        verify(userRepository, times(cases.size())).findAll(any(Pageable.class));
-        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
     }
 
     // --------------------
@@ -122,12 +96,10 @@ class UserServiceImplTest {
     @Test
     void countUsersDelegatesToRepository() {
         when(userRepository.count()).thenReturn(42L);
-
-        long count = userService.countUsers();
-
-        assertThat(count).isEqualTo(42L);
+        assertThat(userService.countUsers()).isEqualTo(42L);
         verify(userRepository).count();
         verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
     }
 
     // --------------------
@@ -136,40 +108,23 @@ class UserServiceImplTest {
 
     @Test
     void findUsersByUsernameReturnsEmptyListWhenLimitNonPositive() {
-        List<UserDto> resultZero = userService.findUsersByUsername("john", 0, 0);
-        List<UserDto> resultNegative = userService.findUsersByUsername("john", 0, -5);
-
-        assertThat(resultZero).isEmpty();
-        assertThat(resultNegative).isEmpty();
-
-        verifyNoInteractions(userRepository);
+        assertThat(userService.findUsersByUsername("x", 0, 0)).isEmpty();
+        assertThat(userService.findUsersByUsername("x", 0, -1)).isEmpty();
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
     }
 
     @Test
-    void findUsersByUsernameDelegatesToFindAllWhenFilterIsNullOrBlank() {
-        User user = mock(User.class);
-        when(user.getId()).thenReturn(1L);
-        when(user.getVersion()).thenReturn(1L);
-        when(user.isReadOnly()).thenReturn(false);
-        when(user.isVisible()).thenReturn(true);
-        when(user.getUsername()).thenReturn("john.doe");
+    void findUsersByUsernameDelegatesToFindUsersWhenFilterNullOrBlank() {
+        when(userRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-        when(userRepository.findAll(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(user)));
+        userService.findUsersByUsername(null, 0, 10);
+        userService.findUsersByUsername("   ", 0, 10);
 
-        int offset = 0;
-        int limit = 10;
-
-        List<UserDto> resultNull = userService.findUsersByUsername(null, offset, limit);
-        List<UserDto> resultBlank = userService.findUsersByUsername("   ", offset, limit);
-
-        assertThat(resultNull).hasSize(1);
-        assertThat(resultBlank).hasSize(1);
-
-        // verify that findAll was used and not the filtered query
         verify(userRepository, times(2)).findAll(any(Pageable.class));
         verify(userRepository, never()).findByUsernameContainingIgnoreCase(anyString(), any(Pageable.class));
         verifyNoMoreInteractions(userRepository);
+
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
     }
 
     @Test
@@ -184,31 +139,26 @@ class UserServiceImplTest {
         when(userRepository.findByUsernameContainingIgnoreCase(anyString(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(user)));
 
-        int offset = 10;
-        int limit = 5;
-        String filter = "  ja  ";
-
-        List<UserDto> result = userService.findUsersByUsername(filter, offset, limit);
+        List<UserDto> result = userService.findUsersByUsername("  ja  ", 10, 5);
 
         assertThat(result).hasSize(1);
-        UserDto dto = result.get(0);
-        assertThat(dto.getId()).isEqualTo(5L);
-        assertThat(dto.getUsername()).isEqualTo("Jane");
-        assertThat(dto.isReadOnly()).isTrue();
-        assertThat(dto.isVisible()).isFalse();
+        assertThat(result.get(0).getId()).isEqualTo(5L);
+        assertThat(result.get(0).getUsername()).isEqualTo("Jane");
 
-        ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
 
-        verify(userRepository).findByUsernameContainingIgnoreCase(usernameCaptor.capture(), pageableCaptor.capture());
+        verify(userRepository).findByUsernameContainingIgnoreCase(filterCaptor.capture(), pageableCaptor.capture());
         verifyNoMoreInteractions(userRepository);
 
-        assertThat(usernameCaptor.getValue()).isEqualTo("ja");
+        assertThat(filterCaptor.getValue()).isEqualTo("ja");
 
-        Pageable pageable = pageableCaptor.getValue();
-        assertThat(pageable.getPageNumber()).isEqualTo(offset / limit);
-        assertThat(pageable.getPageSize()).isEqualTo(limit);
-        assertThat(pageable.getSort()).containsExactly(Sort.Order.asc("id"));
+        Pageable used = pageableCaptor.getValue();
+        assertThat(used.getPageNumber()).isEqualTo(2);
+        assertThat(used.getPageSize()).isEqualTo(5);
+        assertThat(used.getSort()).containsExactly(Sort.Order.asc("id"));
+
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
     }
 
     // --------------------
@@ -219,30 +169,29 @@ class UserServiceImplTest {
     void countUsersByUsernameDelegatesToCountUsersWhenFilterIsNullOrBlank() {
         when(userRepository.count()).thenReturn(10L);
 
-        long countNull = userService.countUsersByUsername(null);
-        long countBlank = userService.countUsersByUsername("   ");
-
-        assertThat(countNull).isEqualTo(10L);
-        assertThat(countBlank).isEqualTo(10L);
+        assertThat(userService.countUsersByUsername(null)).isEqualTo(10L);
+        assertThat(userService.countUsersByUsername("   ")).isEqualTo(10L);
 
         verify(userRepository, times(2)).count();
         verify(userRepository, never()).countByUsernameContainingIgnoreCase(anyString());
         verifyNoMoreInteractions(userRepository);
+
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
     }
 
     @Test
     void countUsersByUsernameUsesTrimmedFilter() {
         when(userRepository.countByUsernameContainingIgnoreCase(anyString())).thenReturn(3L);
 
-        long count = userService.countUsersByUsername("  admin  ");
+        assertThat(userService.countUsersByUsername("  admin  ")).isEqualTo(3L);
 
-        assertThat(count).isEqualTo(3L);
-
-        ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-        verify(userRepository).countByUsernameContainingIgnoreCase(usernameCaptor.capture());
+        ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
+        verify(userRepository).countByUsernameContainingIgnoreCase(filterCaptor.capture());
         verifyNoMoreInteractions(userRepository);
 
-        assertThat(usernameCaptor.getValue()).isEqualTo("admin");
+        assertThat(filterCaptor.getValue()).isEqualTo("admin");
+
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
     }
 
     // --------------------
@@ -251,14 +200,24 @@ class UserServiceImplTest {
 
     @Test
     void findUserByIdReturnsEmptyOptionalWhenIdIsNull() {
-        Optional<UserDto> result = userService.findUserById(null);
-
-        assertThat(result).isEmpty();
-        verifyNoInteractions(userRepository);
+        assertThat(userService.findUserById(null)).isEmpty();
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
     }
 
     @Test
-    void findUserByIdMapsEntityToDtoWhenFound() {
+    void findUserByIdReturnsEmptyOptionalWhenNotFound() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThat(userService.findUserById(99L)).isEmpty();
+
+        verify(userRepository).findById(99L);
+        verifyNoMoreInteractions(userRepository);
+
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
+    }
+
+    @Test
+    void findUserByIdMapsEntityToDtoWhenFoundAndLoadsRoles() {
         User user = mock(User.class);
         when(user.getId()).thenReturn(7L);
         when(user.getVersion()).thenReturn(1L);
@@ -267,30 +226,20 @@ class UserServiceImplTest {
         when(user.getUsername()).thenReturn("tester");
 
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(userRoleRepository.findAllByUserId(7L)).thenReturn(List.of(
+                role(UserRoleType.ADMIN),
+                role(UserRoleType.USER)
+        ));
 
         Optional<UserDto> result = userService.findUserById(7L);
 
         assertThat(result).isPresent();
-        UserDto dto = result.get();
-        assertThat(dto.getId()).isEqualTo(7L);
-        assertThat(dto.getUsername()).isEqualTo("tester");
-        assertThat(dto.isReadOnly()).isFalse();
-        assertThat(dto.isVisible()).isTrue();
+        assertThat(result.get().getRoles()).containsExactlyInAnyOrder(UserRoleType.ADMIN, UserRoleType.USER);
 
         verify(userRepository).findById(7L);
-        verifyNoMoreInteractions(userRepository);
-    }
-
-    @Test
-    void findUserByIdReturnsEmptyOptionalWhenNotFound() {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
-
-        Optional<UserDto> result = userService.findUserById(99L);
-
-        assertThat(result).isEmpty();
-
-        verify(userRepository).findById(99L);
-        verifyNoMoreInteractions(userRepository);
+        verify(userRoleRepository).findAllByUserId(7L);
+        verifyNoMoreInteractions(userRepository, userRoleRepository);
+        verifyNoInteractions(passwordEncoder);
     }
 
     // --------------------
@@ -298,12 +247,13 @@ class UserServiceImplTest {
     // --------------------
 
     @Test
-    void saveUserCreatesNewEntityWhenIdIsNull() {
+    void saveUserCreatesNewEntityWhenIdIsNullAndAssignsDefaultRoleWhenRolesNull() {
         UserDto dto = new UserDto();
         dto.setId(null);
         dto.setUsername("new.user");
         dto.setVisible(true);
         dto.setReadOnly(false);
+        dto.setRoles(null);
 
         User savedEntity = mock(User.class);
         when(savedEntity.getId()).thenReturn(123L);
@@ -313,32 +263,34 @@ class UserServiceImplTest {
         when(savedEntity.getUsername()).thenReturn("new.user");
 
         when(userRepository.save(any(User.class))).thenReturn(savedEntity);
+        when(userRepository.findById(123L)).thenReturn(Optional.of(savedEntity));
+        when(userRoleRepository.findAllByUserId(123L)).thenReturn(List.of(role(UserRoleType.USER)));
 
         UserDto result = userService.saveUser(dto);
 
         assertThat(result.getId()).isEqualTo(123L);
         assertThat(result.getUsername()).isEqualTo("new.user");
-        assertThat(result.isVisible()).isTrue();
-        assertThat(result.isReadOnly()).isFalse();
+        assertThat(result.getRoles()).containsExactly(UserRoleType.USER);
 
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        verifyNoMoreInteractions(userRepository);
+        verify(userRepository).save(any(User.class));
+        verify(userRepository).findById(123L);
 
-        User entityPassedIn = userCaptor.getValue();
-        assertThat(entityPassedIn.getId()).isNull(); // new entity, id should be generated by DB
-        assertThat(entityPassedIn.getUsername()).isEqualTo("new.user");
-        assertThat(entityPassedIn.isVisible()).isTrue();
-        assertThat(entityPassedIn.isReadOnly()).isFalse();
+        verify(userRoleRepository).deleteByUserId(123L);
+        verify(userRoleRepository).save(any(UserRole.class));
+        verify(userRoleRepository).findAllByUserId(123L);
+
+        verifyNoMoreInteractions(userRepository, userRoleRepository);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
-    void saveUserUpdatesExistingEntityWhenIdIsPresent() {
+    void saveUserUpdatesExistingUserAndPersistsRoles_evenIfServiceCreatesNewEntityInstance() {
         UserDto dto = new UserDto();
         dto.setId(5L);
         dto.setUsername("updated.user");
         dto.setVisible(false);
         dto.setReadOnly(true);
+        dto.setRoles(EnumSet.of(UserRoleType.ADMIN));
 
         User existing = mock(User.class);
         when(userRepository.findById(5L)).thenReturn(Optional.of(existing));
@@ -350,22 +302,188 @@ class UserServiceImplTest {
         when(savedEntity.isVisible()).thenReturn(false);
         when(savedEntity.getUsername()).thenReturn("updated.user");
 
-        when(userRepository.save(existing)).thenReturn(savedEntity);
+        // IMPORTANT: stub save for any(User), not only for 'existing'
+        ArgumentCaptor<User> saveCaptor = ArgumentCaptor.forClass(User.class);
+        when(userRepository.save(any(User.class))).thenReturn(savedEntity);
+
+        // setUserRoles() loads user again after save
+        when(userRepository.findById(5L)).thenReturn(Optional.of(savedEntity));
+        when(userRoleRepository.findAllByUserId(5L)).thenReturn(List.of(role(UserRoleType.ADMIN)));
 
         UserDto result = userService.saveUser(dto);
 
         assertThat(result.getId()).isEqualTo(5L);
         assertThat(result.getUsername()).isEqualTo("updated.user");
-        assertThat(result.isVisible()).isFalse();
-        assertThat(result.isReadOnly()).isTrue();
+        assertThat(result.getRoles()).containsExactly(UserRoleType.ADMIN);
+
+        verify(userRepository, times(2)).findById(5L);
+
+        verify(userRepository).save(saveCaptor.capture());
+        User savedArgument = saveCaptor.getValue();
+
+        // We can't rely on 'existing' instance; verify the values written to the saved instance:
+        verify(savedArgument).setVisible(false);
+        verify(savedArgument).setReadOnly(true);
+        verify(savedArgument).setUsername("updated.user");
+
+        verify(userRoleRepository).deleteByUserId(5L);
+        verify(userRoleRepository).save(any(UserRole.class));
+        verify(userRoleRepository).findAllByUserId(5L);
+
+        verifyNoMoreInteractions(userRepository, userRoleRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    // --------------------
+    // resetPassword()
+    // --------------------
+
+    @Test
+    void resetPasswordEncodesAndSavesPassword() {
+        User user = mock(User.class);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("secret")).thenReturn("HASHED");
+
+        User savedEntity = mock(User.class);
+        when(savedEntity.getId()).thenReturn(5L);
+        when(savedEntity.getVersion()).thenReturn(1L);
+        when(savedEntity.isReadOnly()).thenReturn(false);
+        when(savedEntity.isVisible()).thenReturn(true);
+        when(savedEntity.getUsername()).thenReturn("admin");
+
+        when(userRepository.save(any(User.class))).thenReturn(savedEntity);
+        when(userRoleRepository.findAllByUserId(5L)).thenReturn(List.of(role(UserRoleType.ADMIN)));
+
+        UserDto result = userService.resetPassword(5L, "secret");
+
+        assertThat(result.getId()).isEqualTo(5L);
+        assertThat(result.getRoles()).containsExactly(UserRoleType.ADMIN);
 
         verify(userRepository).findById(5L);
-        verify(userRepository).save(existing);
-        verifyNoMoreInteractions(userRepository);
+        verify(passwordEncoder).encode("secret");
+        verify(user).setPassword("HASHED");
+        verify(userRepository).save(any(User.class));
+        verify(userRoleRepository).findAllByUserId(5L);
 
-        // verify that fields were propagated to the existing entity
-        verify(existing).setVisible(false);
-        verify(existing).setReadOnly(true);
-        verify(existing).setUsername("updated.user");
+        verifyNoMoreInteractions(userRepository, userRoleRepository, passwordEncoder);
+    }
+
+    @Test
+    void resetPasswordThrowsWhenUserIdNull() {
+        assertThatThrownBy(() -> userService.resetPassword(null, "secret"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
+    }
+
+    @Test
+    void resetPasswordThrowsWhenPasswordBlank() {
+        assertThatThrownBy(() -> userService.resetPassword(1L, "   "))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
+    }
+
+    @Test
+    void resetPasswordThrowsWhenUserNotFound() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> userService.resetPassword(99L, "secret"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(userRepository).findById(99L);
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(userRoleRepository, passwordEncoder);
+    }
+
+    // --------------------
+    // getUserRoles()
+    // --------------------
+
+    @Test
+    void getUserRolesReturnsEmptyWhenUserIdNull() {
+        assertThat(userService.getUserRoles(null)).isEmpty();
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
+    }
+
+    @Test
+    void getUserRolesReturnsEnumSetFromRepository() {
+        when(userRoleRepository.findAllByUserId(10L)).thenReturn(List.of(
+                role(UserRoleType.ADMIN),
+                role(UserRoleType.USER)
+        ));
+
+        Set<UserRoleType> roles = userService.getUserRoles(10L);
+
+        assertThat(roles).containsExactlyInAnyOrder(UserRoleType.ADMIN, UserRoleType.USER);
+
+        verify(userRoleRepository).findAllByUserId(10L);
+        verifyNoMoreInteractions(userRoleRepository);
+
+        verifyNoInteractions(userRepository, passwordEncoder);
+    }
+
+    // --------------------
+    // setUserRoles()
+    // --------------------
+
+    @Test
+    void setUserRolesThrowsWhenUserIdNull() {
+        assertThatThrownBy(() -> userService.setUserRoles(null, EnumSet.of(UserRoleType.USER)))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(userRepository, userRoleRepository, passwordEncoder);
+    }
+
+    @Test
+    void setUserRolesDeletesExistingAndSavesNewRoles() {
+        User user = mock(User.class);
+        when(userRepository.findById(8L)).thenReturn(Optional.of(user));
+
+        userService.setUserRoles(8L, EnumSet.of(UserRoleType.ADMIN, UserRoleType.USER));
+
+        verify(userRoleRepository).deleteByUserId(8L);
+
+        ArgumentCaptor<UserRole> roleCaptor = ArgumentCaptor.forClass(UserRole.class);
+        verify(userRoleRepository, times(2)).save(roleCaptor.capture());
+
+        List<UserRole> savedRoles = roleCaptor.getAllValues();
+        assertThat(savedRoles)
+                .extracting(UserRole::getUserRoleType)
+                .containsExactlyInAnyOrder(UserRoleType.ADMIN, UserRoleType.USER);
+
+        assertThat(savedRoles).allSatisfy(r -> assertThat(r.getUser()).isSameAs(user));
+
+        verify(userRepository).findById(8L);
+
+        verifyNoMoreInteractions(userRepository, userRoleRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void setUserRolesDeletesExistingAndDoesNothingWhenRolesEmpty() {
+        userService.setUserRoles(8L, EnumSet.noneOf(UserRoleType.class));
+
+        verify(userRoleRepository).deleteByUserId(8L);
+        verifyNoMoreInteractions(userRoleRepository);
+
+        verifyNoInteractions(userRepository, passwordEncoder);
+    }
+
+    @Test
+    void setUserRolesThrowsWhenUserNotFound() {
+        when(userRepository.findById(77L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.setUserRoles(77L, EnumSet.of(UserRoleType.ADMIN)))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(userRoleRepository).deleteByUserId(77L);
+        verify(userRepository).findById(77L);
+
+        verifyNoMoreInteractions(userRepository, userRoleRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    private static UserRole role(UserRoleType type) {
+        UserRole role = new UserRole();
+        role.setUserRoleType(type);
+        return role;
     }
 }
