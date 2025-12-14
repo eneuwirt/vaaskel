@@ -1,8 +1,12 @@
 package com.vaaskel.ui.views.admin;
 
+import com.vaaskel.api.user.UserDto;
+import com.vaaskel.domain.security.entity.UserRoleType;
+import com.vaaskel.service.user.UserService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -20,14 +24,14 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaaskel.api.user.UserDto;
-import com.vaaskel.service.user.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 @Route("admin/users/:userId")
@@ -51,9 +55,11 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     private final VerticalLayout pages = new VerticalLayout();
 
     private final Tab accountTab = new Tab();
+    private final Tab rolesTab = new Tab();
     private final Tab securityTab = new Tab();
 
     private final UserAccountTab accountPage = new UserAccountTab();
+    private final UserRolesTab rolesPage = new UserRolesTab();
     private final UserSecurityTab securityPage = new UserSecurityTab();
 
     private final Map<Tab, Component> tabToPage = new LinkedHashMap<>();
@@ -78,6 +84,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         securityPage.setResetPasswordHandler(this::resetPasswordForCurrentUser);
 
         accountPage.bind(binder);
+        rolesPage.bind(binder);
 
         HorizontalLayout headerBar = buildHeaderBar();
         Component infoBar = buildInfoBar();
@@ -117,11 +124,13 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
     private void configureTabs() {
         accountTab.setLabel(getTranslation("view.userEdit.tab.account"));
+        rolesTab.setLabel(getTranslation("view.userEdit.tab.roles"));
         securityTab.setLabel(getTranslation("view.userEdit.tab.security"));
 
-        tabs.add(accountTab, securityTab);
+        tabs.add(accountTab, rolesTab, securityTab);
 
         tabToPage.put(accountTab, accountPage);
+        tabToPage.put(rolesTab, rolesPage);
         tabToPage.put(securityTab, securityPage);
 
         tabs.addSelectedChangeListener(_ -> updateVisiblePage());
@@ -179,6 +188,10 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         createMode = true;
         currentUser = new UserDto();
 
+        if (currentUser.getRoles() == null) {
+            currentUser.setRoles(EnumSet.of(UserRoleType.USER));
+        }
+
         binder.setBean(currentUser);
 
         accountPage.setUsernameReadOnly(false);
@@ -186,7 +199,6 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         clearInfoBar();
         securityPage.clearSensitiveFields();
     }
-
 
     private void enterEditMode(Long userId, BeforeEnterEvent event) {
         createMode = false;
@@ -207,7 +219,6 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         populateInfoBar(currentUser);
         securityPage.clearSensitiveFields();
     }
-
 
     private void saveUser() {
         if (currentUser == null) {
@@ -233,6 +244,9 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         Notification.show(getTranslation("view.userEdit.notification.saved"), 3000,
                 Notification.Position.BOTTOM_START);
+
+        currentUser = saved;
+        binder.setBean(currentUser);
 
         populateInfoBar(saved);
 
@@ -318,6 +332,37 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         void setUsernameReadOnly(boolean readOnly) {
             usernameField.setReadOnly(readOnly);
+        }
+    }
+
+    private static final class UserRolesTab extends Composite<VerticalLayout> {
+
+        private final CheckboxGroup<UserRoleType> roles = new CheckboxGroup<>();
+
+        UserRolesTab() {
+            var root = getContent();
+            root.setPadding(false);
+            root.setSpacing(true);
+            root.setWidthFull();
+
+            roles.setLabel(getTranslation("view.userEdit.field.roles"));
+            roles.setItems(UserRoleType.values());
+            roles.setItemLabelGenerator(role -> {
+                String key = "role." + role.name();
+                String translated = getTranslation(key);
+                return translated.equals(key) ? role.name() : translated;
+            });
+            roles.setWidthFull();
+
+            root.add(roles);
+        }
+
+        void bind(Binder<UserDto> binder) {
+            binder.forField(roles)
+                    .bind(
+                            dto -> dto.getRoles() != null ? dto.getRoles() : EnumSet.noneOf(UserRoleType.class),
+                            (dto, value) -> dto.setRoles(value != null ? EnumSet.copyOf(value) : EnumSet.noneOf(UserRoleType.class))
+                    );
         }
     }
 

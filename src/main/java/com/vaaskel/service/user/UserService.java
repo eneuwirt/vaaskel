@@ -1,9 +1,11 @@
 package com.vaaskel.service.user;
 
 import com.vaaskel.api.user.UserDto;
+import com.vaaskel.domain.security.entity.UserRoleType;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for querying user data for the UI and API layers.
@@ -61,4 +63,8 @@ public interface UserService {
      * @return updated user dto
      */
     UserDto resetPassword(Long userId, String rawPassword);
+
+    Set<UserRoleType> getUserRoles(Long userId);
+
+    void setUserRoles(Long userId, Set<UserRoleType> roles);
 }

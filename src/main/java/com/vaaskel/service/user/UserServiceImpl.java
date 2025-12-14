@@ -2,24 +2,34 @@ package com.vaaskel.service.user;
 
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.entity.UserRole;
+import com.vaaskel.domain.security.entity.UserRoleType;
 import com.vaaskel.repository.security.UserRepository;
+import com.vaaskel.repository.security.UserRoleRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository,
+            UserRoleRepository userRoleRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -34,12 +44,13 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(
                 page,
                 limit,
-                Sort.by(Sort.Direction.ASC, "id") // default sort: by id ascending
+                Sort.by(Sort.Direction.ASC, "id")
         );
 
+        // NOTE: For list views, we intentionally do NOT load roles (avoid N+1).
         return userRepository.findAll(pageable)
                 .stream()
-                .map(this::toDto)
+                .map(this::toDtoBasic)
                 .toList();
     }
 
@@ -56,7 +67,6 @@ public class UserServiceImpl implements UserService {
 
         String filter = username != null ? username.trim() : "";
         if (filter.isEmpty()) {
-            // Delegate to generic method if no filter is provided
             return findUsers(offset, limit);
         }
 
@@ -65,13 +75,14 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(
                 page,
                 limit,
-                Sort.by(Sort.Direction.ASC, "id") // keep sort consistent with findUsers
+                Sort.by(Sort.Direction.ASC, "id")
         );
 
+        // NOTE: Also no roles here (avoid N+1).
         return userRepository
                 .findByUsernameContainingIgnoreCase(filter, pageable)
                 .stream()
-                .map(this::toDto)
+                .map(this::toDtoBasic)
                 .toList();
     }
 
@@ -79,7 +90,6 @@ public class UserServiceImpl implements UserService {
     public long countUsersByUsername(String username) {
         String filter = username != null ? username.trim() : "";
         if (filter.isEmpty()) {
-            // Delegate to generic count if no filter is provided
             return countUsers();
         }
 
@@ -93,12 +103,16 @@ public class UserServiceImpl implements UserService {
         }
 
         return userRepository.findById(id)
-                .map(this::toDto);
+                .map(user -> {
+                    UserDto dto = toDtoBasic(user);
+                    dto.setRoles(getUserRoles(user.getId()));
+                    return dto;
+                });
     }
 
     @Override
+    @Transactional
     public UserDto saveUser(UserDto dto) {
-        // Map DTO to entity
         User entity;
 
         if (dto.getId() != null) {
@@ -108,22 +122,29 @@ public class UserServiceImpl implements UserService {
             entity = new User();
         }
 
-        // Base fields (only if they should be updated manually)
-        // Version is handled by JPA
         entity.setVisible(dto.isVisible());
         entity.setReadOnly(dto.isReadOnly());
-
-        // User-specific fields
         entity.setUsername(dto.getUsername());
-        // entity.setName(dto.getName());  // if needed
-        // entity.setProfilePicture(dto.getProfilePicture());
 
         User saved = userRepository.save(entity);
 
-        return toDto(saved);
+        // Persist roles if provided; default to USER for new users if null.
+        Set<UserRoleType> roles = dto.getRoles();
+        if (roles == null && dto.getId() == null) {
+            roles = EnumSet.of(UserRoleType.USER);
+        }
+
+        if (roles != null) {
+            setUserRoles(saved.getId(), roles);
+        }
+
+        UserDto out = toDtoBasic(saved);
+        out.setRoles(getUserRoles(saved.getId()));
+        return out;
     }
 
     @Override
+    @Transactional
     public UserDto resetPassword(Long userId, String rawPassword) {
         if (userId == null) {
             throw new IllegalArgumentException("userId must not be null");
@@ -139,15 +160,53 @@ public class UserServiceImpl implements UserService {
         user.setPassword(encoded);
 
         User saved = userRepository.save(user);
-        return toDto(saved);
+
+        UserDto dto = toDtoBasic(saved);
+        dto.setRoles(getUserRoles(saved.getId()));
+        return dto;
     }
 
+    @Override
+    public Set<UserRoleType> getUserRoles(Long userId) {
+        if (userId == null) {
+            return EnumSet.noneOf(UserRoleType.class);
+        }
 
+        return userRoleRepository.findAllByUserId(userId)
+                .stream()
+                .map(UserRole::getUserRoleType)
+                .collect(() -> EnumSet.noneOf(UserRoleType.class),
+                        EnumSet::add,
+                        EnumSet::addAll);
+    }
 
-    private UserDto toDto(User user) {
+    @Override
+    @Transactional
+    public void setUserRoles(Long userId, Set<UserRoleType> roles) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
+        }
+
+        userRoleRepository.deleteByUserId(userId);
+
+        if (roles == null || roles.isEmpty()) {
+            return;
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        for (UserRoleType roleType : roles) {
+            UserRole role = new UserRole();
+            role.setUser(user);
+            role.setUserRoleType(roleType);
+            userRoleRepository.save(role);
+        }
+    }
+
+    private UserDto toDtoBasic(User user) {
         UserDto dto = new UserDto();
 
-        // BaseDto-style fields (adapt to your actual base class)
         dto.setId(user.getId());
         dto.setVersion(user.getVersion());
         dto.setCreatedAt(user.getCreatedAt());
@@ -155,10 +214,7 @@ public class UserServiceImpl implements UserService {
         dto.setReadOnly(user.isReadOnly());
         dto.setVisible(user.isVisible());
 
-        // User-specific fields
         dto.setUsername(user.getUsername());
-        // dto.setName(user.getName());              // if the DTO has a name field
-        // dto.setProfilePicture(user.getProfilePicture()); // if needed later
 
         return dto;
     }
