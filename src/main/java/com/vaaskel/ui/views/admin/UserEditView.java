@@ -181,9 +181,12 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         binder.setBean(currentUser);
 
+        accountPage.setUsernameReadOnly(false);
+
         clearInfoBar();
         securityPage.clearSensitiveFields();
     }
+
 
     private void enterEditMode(Long userId, BeforeEnterEvent event) {
         createMode = false;
@@ -199,9 +202,12 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         currentUser = loaded.get();
         binder.setBean(currentUser);
 
+        accountPage.setUsernameReadOnly(true);
+
         populateInfoBar(currentUser);
         securityPage.clearSensitiveFields();
     }
+
 
     private void saveUser() {
         if (currentUser == null) {
@@ -308,6 +314,10 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             // Bind email only if UserDto supports it:
             // binder.forField(emailField)
             //         .bind(UserDto::getEmail, UserDto::setEmail);
+        }
+
+        void setUsernameReadOnly(boolean readOnly) {
+            usernameField.setReadOnly(readOnly);
         }
     }
 
