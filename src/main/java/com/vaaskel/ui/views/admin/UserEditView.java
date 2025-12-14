@@ -35,7 +35,7 @@ import java.util.function.Consumer;
 @Menu(order = 11, icon = LineAwesomeIconUrl.USER_EDIT_SOLID)
 @RolesAllowed("ADMIN")
 public class UserEditView extends VerticalLayout implements BeforeEnterObserver {
-
+    private static final String ROUTE_USERS = "admin/users";
     private static final String PARAM_USER_ID = "userId";
 
     private final UserService userService;
@@ -71,6 +71,8 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         configureHeaderActions();
         configureTabs();
+
+        getUI().ifPresent(ui -> ui.getPage().setTitle(getTranslation("view.userEdit.title")));
 
         securityPage.setResetPasswordHandler(this::resetPasswordForCurrentUser);
 
@@ -214,7 +216,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
                 3000, Notification.Position.BOTTOM_START);
 
         if (createMode && saved.getId() != null) {
-            getUI().ifPresent(ui -> ui.navigate("admin/users/" + saved.getId()));
+            getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS  + saved.getId()));
         } else {
             navigateBackToList();
         }
@@ -276,8 +278,6 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     }
 
     private static final class UserSecurityTab extends Composite<VerticalLayout> {
-
-        private final TextField loginNameField = new TextField();
         private final EmailField emailField = new EmailField();
 
         private final PasswordField newPassword = new PasswordField();
@@ -293,12 +293,10 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             root.setSpacing(true);
             root.setWidthFull();
 
-            loginNameField.setLabel(getTranslation("view.userEdit.field.loginName"));
             emailField.setLabel(getTranslation("view.userEdit.field.email"));
             newPassword.setLabel(getTranslation("view.userEdit.field.newPassword"));
             confirmPassword.setLabel(getTranslation("view.userEdit.field.confirmPassword"));
 
-            loginNameField.setWidthFull();
             emailField.setWidthFull();
             newPassword.setWidthFull();
             confirmPassword.setWidthFull();
@@ -312,7 +310,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
             FormLayout form = new FormLayout();
             form.setWidthFull();
-            form.add(loginNameField, emailField, newPassword, confirmPassword);
+            form.add(emailField, newPassword, confirmPassword);
 
             HorizontalLayout actions = new HorizontalLayout(resetPasswordButton);
             actions.setPadding(false);
@@ -339,9 +337,11 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
             ConfirmDialog dialog = new ConfirmDialog();
             dialog.setHeader(resetPasswordButton.getText());
-            dialog.setText(getTranslation("view.userEdit.button.resetPassword") + "?");
+            dialog.setText(getTranslation("view.userEdit.dialog.resetPassword.text"));
+            dialog.setConfirmText(getTranslation("view.userEdit.dialog.resetPassword.confirm"));
+            dialog.setHeader(getTranslation("view.userEdit.dialog.resetPassword.header"));
+
             dialog.setCancelable(true);
-            dialog.setConfirmText(getTranslation("view.userEdit.button.resetPassword"));
 
             dialog.addConfirmListener(_ -> {
                 if (resetPasswordHandler != null) {
