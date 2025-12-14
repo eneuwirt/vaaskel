@@ -26,7 +26,6 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 @Menu(order = 10, icon = LineAwesomeIconUrl.USER_SOLID)
 @RolesAllowed("ADMIN")
 public class UserManagementView extends Div {
-
     private final UserService userService;
 
     // Grid and UI components

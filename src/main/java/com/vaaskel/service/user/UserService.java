@@ -52,4 +52,13 @@ public interface UserService {
 
 
     UserDto saveUser(UserDto user);
+
+    /**
+     * Admin-only: resets a user's password without requiring the current password.
+     *
+     * @param userId     id of the user
+     * @param rawPassword new raw password (will be encoded)
+     * @return updated user dto
+     */
+    UserDto resetPassword(Long userId, String rawPassword);
 }

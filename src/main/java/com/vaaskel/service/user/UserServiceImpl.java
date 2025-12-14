@@ -6,6 +6,7 @@ import com.vaaskel.repository.security.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,9 +16,11 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -119,6 +122,26 @@ public class UserServiceImpl implements UserService {
 
         return toDto(saved);
     }
+
+    @Override
+    public UserDto resetPassword(Long userId, String rawPassword) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
+        }
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new IllegalArgumentException("rawPassword must not be blank");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        String encoded = passwordEncoder.encode(rawPassword);
+        user.setPassword(encoded);
+
+        User saved = userRepository.save(user);
+        return toDto(saved);
+    }
+
 
 
     private UserDto toDto(User user) {

@@ -5,7 +5,6 @@ import com.vaaskel.domain.security.entity.User;
 import com.vaaskel.repository.security.UserRepository;
 import com.vaaskel.service.user.UserServiceImpl;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -15,12 +14,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -32,6 +33,9 @@ class UserServiceImplTest {
 
     @InjectMocks
     private UserServiceImpl userService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     // --------------------
     // findUsers()
@@ -66,7 +70,7 @@ class UserServiceImplTest {
         List<UserDto> result = userService.findUsers(offset, limit);
 
         assertThat(result).hasSize(1);
-        UserDto dto = result.get(0);
+        UserDto dto = result.getFirst();
         assertThat(dto.getId()).isEqualTo(1L);
         assertThat(dto.getVersion()).isEqualTo(2L);
         assertThat(dto.isReadOnly()).isFalse();
@@ -191,7 +195,7 @@ class UserServiceImplTest {
         List<UserDto> result = userService.findUsersByUsername(filter, offset, limit);
 
         assertThat(result).hasSize(1);
-        UserDto dto = result.get(0);
+        UserDto dto = result.getFirst();
         assertThat(dto.getId()).isEqualTo(5L);
         assertThat(dto.getUsername()).isEqualTo("Jane");
         assertThat(dto.isReadOnly()).isTrue();
@@ -368,4 +372,63 @@ class UserServiceImplTest {
         verify(existing).setReadOnly(true);
         verify(existing).setUsername("updated.user");
     }
+
+    // --------------------
+    // resetPassword()
+    // --------------------
+
+    @Test
+    void resetPasswordEncodesAndSavesPassword() {
+        User user = mock(User.class);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("secret")).thenReturn("HASHED");
+
+        User savedEntity = mock(User.class);
+        when(savedEntity.getId()).thenReturn(5L);
+        when(savedEntity.getVersion()).thenReturn(1L);
+        when(savedEntity.isReadOnly()).thenReturn(false);
+        when(savedEntity.isVisible()).thenReturn(true);
+        when(savedEntity.getUsername()).thenReturn("admin");
+
+        when(userRepository.save(user)).thenReturn(savedEntity);
+
+        UserDto result = userService.resetPassword(5L, "secret");
+
+        assertThat(result.getId()).isEqualTo(5L);
+
+        verify(userRepository).findById(5L);
+        verify(passwordEncoder).encode("secret");
+        verify(user).setPassword("HASHED");
+        verify(userRepository).save(user);
+        verifyNoMoreInteractions(userRepository, passwordEncoder);
+    }
+
+    @Test
+    void resetPasswordThrowsWhenUserIdNull() {
+        assertThatThrownBy(() -> userService.resetPassword(null, "secret"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(userRepository, passwordEncoder);
+    }
+
+    @Test
+    void resetPasswordThrowsWhenPasswordBlank() {
+        assertThatThrownBy(() -> userService.resetPassword(1L, "   "))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(userRepository, passwordEncoder);
+    }
+
+    @Test
+    void resetPasswordThrowsWhenUserNotFound() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.resetPassword(99L, "secret"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(userRepository).findById(99L);
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
 }
