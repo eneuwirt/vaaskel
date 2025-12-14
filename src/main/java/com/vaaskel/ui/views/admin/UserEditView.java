@@ -44,23 +44,24 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     private UserDto currentUser;
     private boolean createMode;
 
-    // Header actions
     private final Button saveButton = new Button();
     private final Button cancelButton = new Button();
 
-    // Tabs + pages
     private final Tabs tabs = new Tabs();
     private final VerticalLayout pages = new VerticalLayout();
 
     private final Tab accountTab = new Tab();
     private final Tab securityTab = new Tab();
-    private final Tab systemTab = new Tab();
 
     private final UserAccountTab accountPage = new UserAccountTab();
     private final UserSecurityTab securityPage = new UserSecurityTab();
-    private final UserSystemTab systemPage = new UserSystemTab();
 
     private final Map<Tab, Component> tabToPage = new LinkedHashMap<>();
+
+    private final TextField infoId = new TextField();
+    private final TextField infoUsername = new TextField();
+    private final TextField infoCreatedAt = new TextField();
+    private final TextField infoChangedAt = new TextField();
 
     public UserEditView(UserService userService) {
         this.userService = userService;
@@ -76,14 +77,13 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         securityPage.setResetPasswordHandler(this::resetPasswordForCurrentUser);
 
-        // Wire sub-views to binder (user handling stays in parent)
         accountPage.bind(binder);
-        systemPage.bindReadOnly(binder); // read-only fields are filled explicitly on load
 
         HorizontalLayout headerBar = buildHeaderBar();
+        Component infoBar = buildInfoBar();
         VerticalLayout contentLayout = buildContentLayout();
 
-        add(headerBar, contentLayout);
+        add(headerBar, infoBar, contentLayout);
         setFlexGrow(1, contentLayout);
     }
 
@@ -118,13 +118,11 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     private void configureTabs() {
         accountTab.setLabel(getTranslation("view.userEdit.tab.account"));
         securityTab.setLabel(getTranslation("view.userEdit.tab.security"));
-        systemTab.setLabel(getTranslation("view.userEdit.tab.system"));
 
-        tabs.add(accountTab, securityTab, systemTab);
+        tabs.add(accountTab, securityTab);
 
         tabToPage.put(accountTab, accountPage);
         tabToPage.put(securityTab, securityPage);
-        tabToPage.put(systemTab, systemPage);
 
         tabs.addSelectedChangeListener(_ -> updateVisiblePage());
     }
@@ -135,6 +133,29 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         headerBar.setPadding(false);
         headerBar.setSpacing(true);
         return headerBar;
+    }
+
+    private Component buildInfoBar() {
+        infoId.setLabel(getTranslation("view.userEdit.field.id"));
+        infoUsername.setLabel(getTranslation("view.userEdit.field.username"));
+        infoCreatedAt.setLabel(getTranslation("createdAt"));
+        infoChangedAt.setLabel(getTranslation("changedAt"));
+
+        infoId.setReadOnly(true);
+        infoUsername.setReadOnly(true);
+        infoCreatedAt.setReadOnly(true);
+        infoChangedAt.setReadOnly(true);
+
+        infoId.setWidthFull();
+        infoUsername.setWidthFull();
+        infoCreatedAt.setWidthFull();
+        infoChangedAt.setWidthFull();
+
+        HorizontalLayout bar = new HorizontalLayout(infoId, infoUsername, infoCreatedAt, infoChangedAt);
+        bar.setWidthFull();
+        bar.setPadding(false);
+        bar.setSpacing(true);
+        return bar;
     }
 
     private VerticalLayout buildContentLayout() {
@@ -160,7 +181,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         binder.setBean(currentUser);
 
-        systemPage.clearSystemFields();
+        clearInfoBar();
         securityPage.clearSensitiveFields();
     }
 
@@ -178,7 +199,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         currentUser = loaded.get();
         binder.setBean(currentUser);
 
-        systemPage.populateSystemFields(currentUser);
+        populateInfoBar(currentUser);
         securityPage.clearSensitiveFields();
     }
 
@@ -195,25 +216,22 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             return;
         }
 
-        UserDto toSave = binder.getBean();
-
-        // Password change is intentionally NOT part of UserDto binding.
-        // Wire this to your service once you decide the API.
-        // Example idea:
-        // Optional<String> newPassword = securityPage.getNewPasswordIfProvided();
-        // userService.updateCredentials(toSave.getId(), toSave.getUsername(), newPassword);
         if (!securityPage.isPasswordConfirmationOk()) {
             Notification.show(getTranslation("view.userEdit.notification.passwordMismatch"), 5000,
                     Notification.Position.MIDDLE);
             return;
         }
 
+        UserDto toSave = binder.getBean();
         UserDto saved = userService.saveUser(toSave);
 
-        Notification.show(getTranslation("view.userEdit.notification.saved"), 3000, Notification.Position.BOTTOM_START);
+        Notification.show(getTranslation("view.userEdit.notification.saved"), 3000,
+                Notification.Position.BOTTOM_START);
+
+        populateInfoBar(saved);
 
         if (createMode && saved.getId() != null) {
-            getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS + saved.getId()));
+            getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS + "/" + saved.getId()));
         } else {
             navigateBackToList();
         }
@@ -232,15 +250,27 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             Notification.show(getTranslation("view.userEdit.notification.passwordResetOk"), 3000,
                     Notification.Position.BOTTOM_START);
         } catch (RuntimeException ex) {
-            // Keep it generic in UI; log details on server side if needed
             Notification.show(getTranslation("view.userEdit.notification.passwordResetFailed"), 5000,
                     Notification.Position.MIDDLE);
         }
     }
 
-
     private void navigateBackToList() {
-        getUI().ifPresent(ui -> ui.navigate("admin/users"));
+        getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS));
+    }
+
+    private void clearInfoBar() {
+        infoId.clear();
+        infoUsername.clear();
+        infoCreatedAt.clear();
+        infoChangedAt.clear();
+    }
+
+    private void populateInfoBar(UserDto user) {
+        infoId.setValue(user.getId() != null ? String.valueOf(user.getId()) : "");
+        infoUsername.setValue(user.getUsername() != null ? user.getUsername() : "");
+        infoCreatedAt.setValue(user.getCreatedAt() != null ? user.getCreatedAt().toString() : "");
+        infoChangedAt.setValue(user.getChangedAt() != null ? user.getChangedAt().toString() : "");
     }
 
     // ------------------------------------------------------------
@@ -271,8 +301,13 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         }
 
         void bind(Binder<UserDto> binder) {
-            binder.forField(usernameField).asRequired(getTranslation("view.userEdit.validation.usernameRequired"))
+            binder.forField(usernameField)
+                    .asRequired(getTranslation("view.userEdit.validation.usernameRequired"))
                     .bind(UserDto::getUsername, UserDto::setUsername);
+
+            // Bind email only if UserDto supports it:
+            // binder.forField(emailField)
+            //         .bind(UserDto::getEmail, UserDto::setEmail);
         }
     }
 
@@ -289,7 +324,6 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             root.setPadding(false);
             root.setSpacing(true);
             root.setWidthFull();
-
 
             newPassword.setLabel(getTranslation("view.userEdit.field.newPassword"));
             confirmPassword.setLabel(getTranslation("view.userEdit.field.confirmPassword"));
@@ -328,15 +362,13 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
             String p1 = newPassword.getValue();
             if (p1 == null || p1.isBlank()) {
-                return; // nothing to do
+                return;
             }
 
             ConfirmDialog dialog = new ConfirmDialog();
-            dialog.setHeader(resetPasswordButton.getText());
             dialog.setText(getTranslation("view.userEdit.dialog.resetPassword.text"));
             dialog.setConfirmText(getTranslation("view.userEdit.dialog.resetPassword.confirm"));
             dialog.setHeader(getTranslation("view.userEdit.dialog.resetPassword.header"));
-
             dialog.setCancelable(true);
 
             dialog.addConfirmListener(_ -> {
@@ -360,55 +392,6 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         void clearSensitiveFields() {
             newPassword.clear();
             confirmPassword.clear();
-        }
-    }
-
-
-    private static final class UserSystemTab extends Composite<VerticalLayout> {
-
-        private final TextField idField = new TextField();
-        private final TextField createdAtField = new TextField();
-        private final TextField changedAtField = new TextField();
-
-        UserSystemTab() {
-            var root = getContent();
-            root.setPadding(false);
-            root.setSpacing(true);
-            root.setWidthFull();
-
-            idField.setLabel(getTranslation("view.userEdit.field.id"));
-            idField.setReadOnly(true);
-            idField.setWidthFull();
-
-            createdAtField.setLabel(getTranslation("createdAt"));
-            createdAtField.setReadOnly(true);
-            createdAtField.setWidthFull();
-
-            changedAtField.setLabel(getTranslation("changedAt"));
-            changedAtField.setReadOnly(true);
-            changedAtField.setWidthFull();
-
-            FormLayout form = new FormLayout();
-            form.setWidthFull();
-            form.add(idField, createdAtField, changedAtField);
-
-            root.add(form);
-        }
-
-        void bindReadOnly(Binder<UserDto> ignoredBinder) {
-            // Intentionally empty: system fields are populated manually.
-        }
-
-        void populateSystemFields(UserDto user) {
-            idField.setValue(user.getId() != null ? String.valueOf(user.getId()) : "");
-            createdAtField.setValue(user.getCreatedAt() != null ? user.getCreatedAt().toString() : "");
-            changedAtField.setValue(user.getChangedAt() != null ? user.getChangedAt().toString() : "");
-        }
-
-        void clearSystemFields() {
-            idField.clear();
-            createdAtField.clear();
-            changedAtField.clear();
         }
     }
 }
