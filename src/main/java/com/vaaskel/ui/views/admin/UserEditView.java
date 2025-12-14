@@ -89,9 +89,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        String rawId = event.getRouteParameters()
-                .get(PARAM_USER_ID)
-                .orElse("new");
+        String rawId = event.getRouteParameters().get(PARAM_USER_ID).orElse("new");
 
         if ("new".equalsIgnoreCase(rawId)) {
             enterCreateMode();
@@ -100,8 +98,8 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
                 Long id = Long.valueOf(rawId);
                 enterEditMode(id, event);
             } catch (NumberFormatException ex) {
-                Notification.show(getTranslation("view.userEdit.notification.invalidId"),
-                        5000, Notification.Position.MIDDLE);
+                Notification.show(getTranslation("view.userEdit.notification.invalidId"), 5000,
+                        Notification.Position.MIDDLE);
                 event.forwardTo(UserManagementView.class);
             }
         }
@@ -171,8 +169,8 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         Optional<UserDto> loaded = userService.findUserById(userId);
         if (loaded.isEmpty()) {
-            Notification.show(getTranslation("view.userEdit.notification.notFound"),
-                    5000, Notification.Position.MIDDLE);
+            Notification.show(getTranslation("view.userEdit.notification.notFound"), 5000,
+                    Notification.Position.MIDDLE);
             event.forwardTo(UserManagementView.class);
             return;
         }
@@ -186,14 +184,14 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
     private void saveUser() {
         if (currentUser == null) {
-            Notification.show(getTranslation("view.userEdit.notification.noUserLoaded"),
-                    5000, Notification.Position.MIDDLE);
+            Notification.show(getTranslation("view.userEdit.notification.noUserLoaded"), 5000,
+                    Notification.Position.MIDDLE);
             return;
         }
 
         if (!binder.validate().isOk()) {
-            Notification.show(getTranslation("view.userEdit.notification.validationFailed"),
-                    5000, Notification.Position.MIDDLE);
+            Notification.show(getTranslation("view.userEdit.notification.validationFailed"), 5000,
+                    Notification.Position.MIDDLE);
             return;
         }
 
@@ -205,18 +203,17 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         // Optional<String> newPassword = securityPage.getNewPasswordIfProvided();
         // userService.updateCredentials(toSave.getId(), toSave.getUsername(), newPassword);
         if (!securityPage.isPasswordConfirmationOk()) {
-            Notification.show(getTranslation("view.userEdit.notification.passwordMismatch"),
-                    5000, Notification.Position.MIDDLE);
+            Notification.show(getTranslation("view.userEdit.notification.passwordMismatch"), 5000,
+                    Notification.Position.MIDDLE);
             return;
         }
 
         UserDto saved = userService.saveUser(toSave);
 
-        Notification.show(getTranslation("view.userEdit.notification.saved"),
-                3000, Notification.Position.BOTTOM_START);
+        Notification.show(getTranslation("view.userEdit.notification.saved"), 3000, Notification.Position.BOTTOM_START);
 
         if (createMode && saved.getId() != null) {
-            getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS  + saved.getId()));
+            getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS + saved.getId()));
         } else {
             navigateBackToList();
         }
@@ -224,20 +221,20 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
     private void resetPasswordForCurrentUser(String rawPassword) {
         if (currentUser == null || currentUser.getId() == null) {
-            Notification.show(getTranslation("view.userEdit.notification.passwordResetRequiresSavedUser"),
-                    5000, Notification.Position.MIDDLE);
+            Notification.show(getTranslation("view.userEdit.notification.passwordResetRequiresSavedUser"), 5000,
+                    Notification.Position.MIDDLE);
             return;
         }
 
         try {
             userService.resetPassword(currentUser.getId(), rawPassword);
             securityPage.clearSensitiveFields();
-            Notification.show(getTranslation("view.userEdit.notification.passwordResetOk"),
-                    3000, Notification.Position.BOTTOM_START);
+            Notification.show(getTranslation("view.userEdit.notification.passwordResetOk"), 3000,
+                    Notification.Position.BOTTOM_START);
         } catch (RuntimeException ex) {
             // Keep it generic in UI; log details on server side if needed
-            Notification.show(getTranslation("view.userEdit.notification.passwordResetFailed"),
-                    5000, Notification.Position.MIDDLE);
+            Notification.show(getTranslation("view.userEdit.notification.passwordResetFailed"), 5000,
+                    Notification.Position.MIDDLE);
         }
     }
 
@@ -251,7 +248,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     // ------------------------------------------------------------
 
     private static final class UserAccountTab extends Composite<VerticalLayout> {
-
+        private final EmailField emailField = new EmailField();
         private final TextField usernameField = new TextField();
 
         UserAccountTab() {
@@ -263,23 +260,23 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             usernameField.setLabel(getTranslation("view.userEdit.field.username"));
             usernameField.setWidthFull();
 
+            emailField.setLabel(getTranslation("view.userEdit.field.email"));
+            emailField.setWidthFull();
+
             FormLayout form = new FormLayout();
             form.setWidthFull();
-            form.add(usernameField);
+            form.add(usernameField, emailField);
 
             root.add(form);
         }
 
         void bind(Binder<UserDto> binder) {
-            binder.forField(usernameField)
-                    .asRequired(getTranslation("view.userEdit.validation.usernameRequired"))
+            binder.forField(usernameField).asRequired(getTranslation("view.userEdit.validation.usernameRequired"))
                     .bind(UserDto::getUsername, UserDto::setUsername);
         }
     }
 
     private static final class UserSecurityTab extends Composite<VerticalLayout> {
-        private final EmailField emailField = new EmailField();
-
         private final PasswordField newPassword = new PasswordField();
         private final PasswordField confirmPassword = new PasswordField();
 
@@ -293,11 +290,10 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             root.setSpacing(true);
             root.setWidthFull();
 
-            emailField.setLabel(getTranslation("view.userEdit.field.email"));
+
             newPassword.setLabel(getTranslation("view.userEdit.field.newPassword"));
             confirmPassword.setLabel(getTranslation("view.userEdit.field.confirmPassword"));
 
-            emailField.setWidthFull();
             newPassword.setWidthFull();
             confirmPassword.setWidthFull();
 
@@ -310,7 +306,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
             FormLayout form = new FormLayout();
             form.setWidthFull();
-            form.add(emailField, newPassword, confirmPassword);
+            form.add(newPassword, confirmPassword);
 
             HorizontalLayout actions = new HorizontalLayout(resetPasswordButton);
             actions.setPadding(false);
@@ -325,8 +321,8 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         private void onResetPasswordClicked() {
             if (!isPasswordConfirmationOk()) {
-                Notification.show(getTranslation("view.userEdit.notification.passwordMismatch"),
-                        5000, Notification.Position.MIDDLE);
+                Notification.show(getTranslation("view.userEdit.notification.passwordMismatch"), 5000,
+                        Notification.Position.MIDDLE);
                 return;
             }
 
