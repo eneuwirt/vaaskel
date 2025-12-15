@@ -53,6 +53,8 @@ public interface UserService {
     List<UserDto> findUsersByUsername(String username, int offset, int limit);
 
 
+    UserDto createUser(UserDto dto);
+
     UserDto saveUser(UserDto user);
 
     /**

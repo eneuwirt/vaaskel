@@ -1,5 +1,6 @@
 package com.vaaskel.ui.views.admin;
 
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.UserRoleType;
 import com.vaaskel.service.user.UserService;
@@ -31,7 +32,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 @Route("admin/users/:userId")
@@ -233,17 +233,18 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             return;
         }
 
-        if (!securityPage.isPasswordConfirmationOk()) {
-            Notification.show(getTranslation("view.userEdit.notification.passwordMismatch"), 5000,
+        if (securityPage.hasAnyPasswordInput()) {
+            Notification.show(getTranslation("view.userEdit.notification.passwordChangeUseReset"), 5000,
                     Notification.Position.MIDDLE);
             return;
         }
 
         UserDto toSave = binder.getBean();
-        UserDto saved = userService.saveUser(toSave);
 
-        Notification.show(getTranslation("view.userEdit.notification.saved"), 3000,
-                Notification.Position.BOTTOM_START);
+        UserDto saved = createMode ? userService.createUser(toSave)   // new method
+                : userService.saveUser(toSave);
+
+        Notification.show(getTranslation("view.userEdit.notification.saved"), 3000, Notification.Position.BOTTOM_START);
 
         currentUser = saved;
         binder.setBean(currentUser);
@@ -256,6 +257,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             navigateBackToList();
         }
     }
+
 
     private void resetPasswordForCurrentUser(String rawPassword) {
         if (currentUser == null || currentUser.getId() == null) {
@@ -300,6 +302,13 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     private static final class UserAccountTab extends Composite<VerticalLayout> {
         private final EmailField emailField = new EmailField();
         private final TextField usernameField = new TextField();
+        // in UserAccountTab:
+        private final Checkbox enabled = new Checkbox(getTranslation("view.userEdit.account.enabled"));
+        private final Checkbox locked = new Checkbox(getTranslation("view.userEdit.account.locked"));
+        private final Checkbox expired = new Checkbox(getTranslation("view.userEdit.account.expired"));
+        private final Checkbox credentialsExpired =
+                new Checkbox(getTranslation("view.userEdit.account.credentialsExpired"));
+
 
         UserAccountTab() {
             var root = getContent();
@@ -316,14 +325,29 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
             FormLayout form = new FormLayout();
             form.setWidthFull();
             form.add(usernameField, emailField);
+            form.add(enabled, locked, expired, credentialsExpired);
 
             root.add(form);
         }
 
         void bind(Binder<UserDto> binder) {
-            binder.forField(usernameField)
-                    .asRequired(getTranslation("view.userEdit.validation.usernameRequired"))
+            binder.forField(usernameField).asRequired(getTranslation("view.userEdit.validation.usernameRequired"))
                     .bind(UserDto::getUsername, UserDto::setUsername);
+
+            binder.forField(enabled).bind(UserDto::isEnabled, UserDto::setEnabled);
+
+            // locked = !accountNonLocked
+            binder.forField(locked)
+                    .bind(dto -> !dto.isAccountNonLocked(), (dto, value) -> dto.setAccountNonLocked(!value));
+
+            // expired = !accountNonExpired
+            binder.forField(expired)
+                    .bind(dto -> !dto.isAccountNonExpired(), (dto, value) -> dto.setAccountNonExpired(!value));
+
+            // credentialsExpired = !credentialsNonExpired
+            binder.forField(credentialsExpired)
+                    .bind(dto -> !dto.isCredentialsNonExpired(), (dto, value) -> dto.setCredentialsNonExpired(!value));
+
 
             // Bind email only if UserDto supports it:
             // binder.forField(emailField)
@@ -359,10 +383,15 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
 
         void bind(Binder<UserDto> binder) {
             binder.forField(roles)
-                    .bind(
-                            dto -> dto.getRoles() != null ? dto.getRoles() : EnumSet.noneOf(UserRoleType.class),
-                            (dto, value) -> dto.setRoles(value != null ? EnumSet.copyOf(value) : EnumSet.noneOf(UserRoleType.class))
-                    );
+                    .bind(dto -> dto.getRoles() != null ? dto.getRoles() : EnumSet.noneOf(UserRoleType.class),
+                            (dto, value) -> {
+                                // leere Rollen sind ERLAUBT
+                                if (value == null || value.isEmpty()) {
+                                    dto.setRoles(EnumSet.noneOf(UserRoleType.class));
+                                } else {
+                                    dto.setRoles(EnumSet.copyOf(value));
+                                }
+                            });
         }
     }
 
@@ -447,6 +476,12 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         void clearSensitiveFields() {
             newPassword.clear();
             confirmPassword.clear();
+        }
+
+        boolean hasAnyPasswordInput() {
+            String p1 = newPassword.getValue();
+            String p2 = confirmPassword.getValue();
+            return (p1 != null && !p1.isBlank()) || (p2 != null && !p2.isBlank());
         }
     }
 }

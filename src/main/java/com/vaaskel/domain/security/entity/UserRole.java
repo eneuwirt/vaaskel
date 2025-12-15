@@ -13,29 +13,25 @@ import jakarta.persistence.*;
         }
 )
 public class UserRole extends AbstractEntity {
+
     @Enumerated(EnumType.STRING)
+    @Column(name = "user_role_type", nullable = false, length = 50)
     private UserRoleType userRoleType;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    public UserRole() {
-    }
+    protected UserRole() {}
 
-    public UserRoleType getUserRoleType() {
-        return userRoleType;
-    }
-
-    public void setUserRoleType(UserRoleType role) {
-        this.userRoleType = role;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
+    public UserRole(UserRoleType userRoleType, User user) {
+        this.userRoleType = userRoleType;
         this.user = user;
     }
+
+    public UserRoleType getUserRoleType() { return userRoleType; }
+    public void setUserRoleType(UserRoleType role) { this.userRoleType = role; }
+
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 }

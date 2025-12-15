@@ -9,8 +9,8 @@ class AbstractEntityEqualsHashCodeTest {
 
     @Test
     void newEntitiesWithoutIdAreNotEqual() {
-        User u1 = new User();
-        User u2 = new User();
+        User u1 = new User("testuser", "password");
+        User u2 = new User("testuser", "password");
 
         assertThat(u1).isNotEqualTo(u2);
         assertThat(u1).isNotEqualTo(null);
@@ -18,8 +18,8 @@ class AbstractEntityEqualsHashCodeTest {
 
     @Test
     void entitiesWithSameIdAreEqual() {
-        User u1 = new User();
-        User u2 = new User();
+        User u1 = new User("testuser", "password");
+        User u2 = new User("testuser", "password");
 
         u1.setId(1L);
         u2.setId(1L);
@@ -30,8 +30,8 @@ class AbstractEntityEqualsHashCodeTest {
 
     @Test
     void entitiesWithDifferentIdsAreNotEqual() {
-        User u1 = new User();
-        User u2 = new User();
+        User u1 = new User("testuser", "password");
+        User u2 = new User("testuser", "password");
 
         u1.setId(1L);
         u2.setId(2L);
@@ -41,7 +41,7 @@ class AbstractEntityEqualsHashCodeTest {
 
     @Test
     void entitiesOfDifferentSubclassAreNotEqualEvenWithSameId() {
-        User user = new User();
+        User user = new User("testuser", "password");
         user.setId(1L);
 
         class OtherEntity extends AbstractEntity {}

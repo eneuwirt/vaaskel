@@ -1,6 +1,7 @@
 package com.vaaskel.domain.common;
 
 import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.security.entity.UserRoleType;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -11,7 +12,7 @@ class AbstractEntityDefaultsTest {
 
     @Test
     void defaultFlagsShouldBeFalse() {
-        User user = new User();
+        User user = new User("testuser", "password");
 
         assertThat(user.isReadOnly()).isFalse();
         assertThat(user.isVisible()).isFalse();
@@ -19,7 +20,7 @@ class AbstractEntityDefaultsTest {
 
     @Test
     void flagsCanBeChanged() {
-        User user = new User();
+        User user = new User("testuser", "password");
 
         user.setReadOnly(true);
         user.setVisible(true);
