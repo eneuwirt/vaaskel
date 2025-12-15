@@ -42,6 +42,10 @@ public class User extends AbstractEntity {
     public User(String username, String passwordHash) {
         this.username = username;
         this.password = passwordHash;
+        this.enabled = true;
+        this.accountNonLocked = true;
+        this.accountNonExpired = true;
+        this.credentialsNonExpired = true;
     }
 
 

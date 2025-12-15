@@ -11,10 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -107,33 +104,59 @@ public class UserServiceImpl implements UserService {
         return out;
     }
 
-    @Override
     @Transactional
     public UserDto saveUser(UserDto dto) {
-        if (dto == null)
-            throw new IllegalArgumentException("dto must not be null");
-        if (dto.getId() == null)
-            throw new IllegalArgumentException("dto.id must not be null for update");
-        if (dto.getUsername() == null || dto.getUsername().isBlank())
-            throw new IllegalArgumentException("username must not be blank");
+        if (dto == null || dto.getId() == null) {
+            throw new IllegalArgumentException("dto.id must not be null");
+        }
 
-        User entity = userRepository.findById(dto.getId())
+        User user = userRepository.findById(dto.getId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + dto.getId()));
 
-        entity.setUsername(dto.getUsername().trim());
-        entity.setVisible(dto.isVisible());
-        entity.setReadOnly(dto.isReadOnly());
+        fromDtoBasic(dto, user);
+
+        if (dto.getRoles() != null) {
+            setUserRoles(user.getId(), dto.getRoles());
+        }
+
+        UserDto out = toDtoBasic(user);
+        out.setRoles(dto.getRoles() != null ? EnumSet.copyOf(dto.getRoles()) : getUserRoles(user.getId()));
+
+        return out;
+    }
+
+
+    @Override
+    @Transactional
+    public UserDto createUser(UserDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("dto must not be null");
+        }
+
+        String username = dto.getUsername() != null ? dto.getUsername().trim() : "";
+        if (username.isEmpty()) {
+            throw new IllegalArgumentException("username must not be blank");
+        }
+
+        // TEMP password: random, never shown
+        String tempRaw = UUID.randomUUID().toString();
+        User entity = new User(username, passwordEncoder.encode(tempRaw));
+
+        fromDtoBasic(dto, entity);
 
         User saved = userRepository.save(entity);
 
-        if (dto.getRoles() != null) {
-            setUserRoles(saved.getId(), dto.getRoles());
+        Set<UserRoleType> roles = dto.getRoles();
+        if (roles == null || roles.isEmpty()) {
+            roles = EnumSet.of(UserRoleType.USER);
         }
+        setUserRoles(saved.getId(), roles);
 
         UserDto out = toDtoBasic(saved);
         out.setRoles(getUserRoles(saved.getId()));
         return out;
     }
+
 
     @Override
     @Transactional
@@ -164,24 +187,31 @@ public class UserServiceImpl implements UserService {
                 .collect(() -> EnumSet.noneOf(UserRoleType.class), EnumSet::add, EnumSet::addAll);
     }
 
-    @Override
     @Transactional
     public void setUserRoles(Long userId, Set<UserRoleType> roles) {
-        if (userId == null)
+        if (userId == null) {
             throw new IllegalArgumentException("userId must not be null");
+        }
 
         userRoleRepository.deleteByUserId(userId);
+        userRoleRepository.flush(); // ensure deletion before adding new roles
 
-        if (roles == null || roles.isEmpty())
-            return;
+        if (roles == null || roles.isEmpty()) {
+            return; // ← nothing to add
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
-        var entities = roles.stream().map(rt -> new UserRole(rt, user)).toList();
+        EnumSet<UserRoleType> unique = EnumSet.copyOf(roles);
 
-        userRoleRepository.saveAll(entities);
+        userRoleRepository.saveAll(
+                unique.stream()
+                        .map(rt -> new UserRole(rt, user))
+                        .toList()
+        );
     }
+
 
     private UserDto toDtoBasic(User user) {
         UserDto dto = new UserDto();
@@ -190,11 +220,40 @@ public class UserServiceImpl implements UserService {
         dto.setVersion(user.getVersion());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setChangedAt(user.getChangedAt());
-        dto.setReadOnly(user.isReadOnly());
-        dto.setVisible(user.isVisible());
 
         dto.setUsername(user.getUsername());
 
+        dto.setVisible(user.isVisible());
+        dto.setReadOnly(user.isReadOnly());
+
+        dto.setEnabled(user.isEnabled());
+        dto.setAccountNonLocked(user.isAccountNonLocked());
+        dto.setAccountNonExpired(user.isAccountNonExpired());
+        dto.setCredentialsNonExpired(user.isCredentialsNonExpired());
+
         return dto;
     }
+
+
+    private void fromDtoBasic(UserDto dto, User entity) {
+        // defensive
+        if (dto == null || entity == null) {
+            throw new IllegalArgumentException("dto/entity must not be null");
+        }
+
+        // identity / basic
+        if (dto.getUsername() != null) {
+            entity.setUsername(dto.getUsername().trim());
+        }
+
+        entity.setVisible(dto.isVisible());
+        entity.setReadOnly(dto.isReadOnly());
+
+        // security flags
+        entity.setEnabled(dto.isEnabled());
+        entity.setAccountNonLocked(dto.isAccountNonLocked());
+        entity.setAccountNonExpired(dto.isAccountNonExpired());
+        entity.setCredentialsNonExpired(dto.isCredentialsNonExpired());
+    }
+
 }
