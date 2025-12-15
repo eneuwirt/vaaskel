@@ -12,7 +12,7 @@ spring:
         username: root
     jpa:
         hibernate:
-          ddl-auto: create-drop        # JPA only validates schema against entities
+          ddl-auto: validate        # JPA only validates schema against entities
         properties:
           hibernate:
               format_sql: false      # Pretty-print generated SQL
@@ -20,7 +20,7 @@ spring:
     liquibase:
        enabled: false               # Liquibase is disabled because Flyway manages schema migrations
     flyway:
-      enabled: false                 # Global Flyway switch; environment profiles may override this
+      enabled: true                 # Global Flyway switch; environment profiles may override this
       locations: classpath:db/migration
 vaadin:
     allowed-packages: com.vaaskel
