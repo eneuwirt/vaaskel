@@ -31,16 +31,13 @@ class UserRoleRepositoryTest {
     private UserRoleRepository userRoleRepository;
 
     private User createAndSaveUser(String username, String password) {
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(password);
+        User user = new User(username,password);
         return userRepository.save(user);
     }
 
     private UserRole createAndSaveUserRole(User user, UserRoleType type) {
-        UserRole role = new UserRole();
-        role.setUser(user);
-        role.setUserRoleType(type);
+        UserRole role = new UserRole(type, user);
+
         return userRoleRepository.save(role);
     }
 

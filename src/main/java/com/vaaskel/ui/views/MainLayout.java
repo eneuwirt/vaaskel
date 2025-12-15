@@ -113,7 +113,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.dark"),
                     e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.DARK));
 
-            userName.getSubMenu().add(new Hr());
+            userName.getSubMenu().addComponent(new Hr());
             userName.getSubMenu().addItem(getTranslation("main.user.signout"), e -> authenticatedUser.logout());
 
             layout.add(userMenu);

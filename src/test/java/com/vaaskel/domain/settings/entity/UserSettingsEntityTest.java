@@ -15,8 +15,7 @@ class UserSettingsEntityTest {
 
     @Test
     void constructor_setsDefaultThemePreferenceToSystem() {
-        User user = new User();
-        user.setUsername("eduard");
+        User user = new User("test", "test");
 
         UserSettings settings = new UserSettings(user);
 
@@ -26,8 +25,7 @@ class UserSettingsEntityTest {
 
     @Test
     void canChangeThemePreference() {
-        User user = new User();
-        user.setUsername("eduard");
+        User user = new User("test", "test");
 
         UserSettings settings = new UserSettings(user);
         settings.setThemePreference(ThemePreference.DARK);

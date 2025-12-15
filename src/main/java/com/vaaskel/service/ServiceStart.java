@@ -7,6 +7,7 @@ import com.vaaskel.repository.security.UserRepository;
 import com.vaaskel.repository.security.UserRoleRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.logging.Logger;
@@ -16,12 +17,12 @@ public class ServiceStart {
     private static final Logger log = Logger.getLogger(ServiceStart.class.getName());
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordEncoder encoder;
 
-    public ServiceStart(UserRepository userRepository, UserRoleRepository userRoleRepository) {
+    public ServiceStart(UserRepository userRepository, UserRoleRepository userRoleRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
-        this.encoder = new BCryptPasswordEncoder();
+        this.encoder = encoder;
     }
 
     @PostConstruct
@@ -39,25 +40,14 @@ public class ServiceStart {
 
         log.warning(" >First run. Init user created. REMOVE IT ASAP !!");
 
-        user = new User();
-        //user.setEnabled(true);
-        user.setUsername("admin");
-        user.setPassword(encoder.encode("admin"));
-        //user.setFirstName("DELETE ME or Change Password ASAP");
-        //user.setLastName("DELETE ME or Change Password ASAP");
-        //user.setEmail("admin@ce-engineering.com");
-        //user.setThruDate(LocalDate.now().plusDays(1));
+        user = new User("admin", encoder.encode("admin"));
         this.userRepository.save(user);
 
 
-        role = new UserRole();
-        role.setUserRoleType(UserRoleType.ADMIN);
-        role.setUser(user);
+        role = new UserRole(UserRoleType.ADMIN, user);
         this.userRoleRepository.save(role);
 
-        role = new UserRole();
-        role.setUserRoleType(UserRoleType.USER);
-        role.setUser(user);
+        role = new UserRole(UserRoleType.USER, user);
         this.userRoleRepository.save(role);
 
         //settings = new UserSettings();

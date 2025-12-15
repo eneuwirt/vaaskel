@@ -18,9 +18,7 @@ class AbstractEntityIdGenerationTest {
 
     @Test
     void idIsGeneratedOnPersist() {
-        User user = new User();
-        user.setUsername("admin");
-        user.setPassword("secret");
+        User user = new User("testuser", "password");
 
         User saved = userRepository.save(user);
 

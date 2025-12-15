@@ -21,9 +21,7 @@ class UserRepositoryTest {
     private UserRepository userRepository;
 
     private User createUser() {
-        User user = new User();
-        user.setUsername(USERNAME);
-        user.setPassword(PASSWORD);
+        User user = new User(USERNAME, PASSWORD);
         return user;
     }
 

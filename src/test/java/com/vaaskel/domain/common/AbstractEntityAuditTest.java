@@ -28,9 +28,7 @@ class AbstractEntityAuditTest {
     }
 
     private User createUser() {
-        User user = new User();
-        user.setUsername(USERNAME);
-        user.setPassword(PASSWORD);
+        User user = new User(USERNAME, PASSWORD);
         return user;
     }
 
@@ -41,24 +39,16 @@ class AbstractEntityAuditTest {
         LocalDateTime createdAt = saved.getCreatedAt();
         LocalDateTime changedAt = saved.getChangedAt();
 
-        assertThat(createdAt)
-                .as("createdAt should be set on persist")
-                .isNotNull();
+        assertThat(createdAt).as("createdAt should be set on persist").isNotNull();
 
-        assertThat(changedAt)
-                .as("changedAt should be set on persist")
-                .isNotNull();
+        assertThat(changedAt).as("changedAt should be set on persist").isNotNull();
 
         // We only assert that both timestamps are close to each other,
         // not that one is strictly before/after the other on microsecond level.
         Duration diff = Duration.between(createdAt, changedAt).abs();
-        assertThat(diff)
-                .as("createdAt and changedAt should not differ too much")
-                .isLessThan(Duration.ofSeconds(1));
+        assertThat(diff).as("createdAt and changedAt should not differ too much").isLessThan(Duration.ofSeconds(1));
 
-        assertThat(saved.getVersion())
-                .as("Version should be initialized (0 or greater)")
-                .isNotNull()
+        assertThat(saved.getVersion()).as("Version should be initialized (0 or greater)").isNotNull()
                 .isGreaterThanOrEqualTo(0);
     }
 
@@ -74,17 +64,12 @@ class AbstractEntityAuditTest {
 
         User updated = userRepository.saveAndFlush(saved);
 
-        assertThat(updated.getVersion())
-                .as("Version must increase on update")
-                .isNotNull()
+        assertThat(updated.getVersion()).as("Version must increase on update").isNotNull()
                 .isGreaterThan(initialVersion);
 
-        assertThat(updated.getChangedAt())
-                .as("changedAt must be updated after modification")
+        assertThat(updated.getChangedAt()).as("changedAt must be updated after modification")
                 .isAfterOrEqualTo(oldChangedAt);
 
-        assertThat(updated.getCreatedAt())
-                .as("createdAt must remain unchanged")
-                .isEqualTo(oldCreatedAt);
+        assertThat(updated.getCreatedAt()).as("createdAt must remain unchanged").isEqualTo(oldCreatedAt);
     }
 }
