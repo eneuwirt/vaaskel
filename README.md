@@ -6,7 +6,11 @@
 ![Docker](https://img.shields.io/badge/Docker-enabled-2496ED?logo=docker)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A minimal but fully functional **Vaadin 24 + Spring Boot** application designed as a *walking skeleton*: a complete end-to-end architecture with a clean domain model, security, PostgreSQL persistence, Docker-based environments, and optional Nginx reverse proxy with HTTPS.
+A minimal but fully functional **Vaadin 24 + Spring Boot** application designed as a **walking skeleton**.
+
+This repository provides a **complete, production-grade end-to-end architecture**: UI, security, persistence, infrastructure, CI/CD and deployment — intentionally reduced to the smallest meaningful scope.
+
+This is **not** a prototype and **not** a demo. It is a **finished architectural baseline**.
 
 ---
 
@@ -21,8 +25,11 @@ A minimal but fully functional **Vaadin 24 + Spring Boot** application designed 
 - [Development](#️-development)
 - [Production Build](#-production-build)
 - [Security](#-security)
+- [Walking Skeleton Status](#-walking-skeleton-status)
+- [Reference End-to-End Flow](#-reference-end-to-end-flow)
+- [Explicit Non-Goals](#-explicit-non-goals)
+- [Next Phase](#-next-phase)
 - [Branching Strategy](#-branching-strategy-github-flow)
-- [Roadmap](#-roadmap)
 - [License](#-license)
 
 ---
@@ -33,11 +40,12 @@ A minimal but fully functional **Vaadin 24 + Spring Boot** application designed 
 - Spring Boot backend
 - Layered, maintainable architecture
 - Authentication & authorization
-- PostgreSQL + Flyway migration
-- Multi-environment setup (dev, int, prod)
-- Docker & docker-compose ready
-- Optional HTTPS reverse proxy
-- Production build pipeline (GitHub Actions + GHCR)
+- PostgreSQL persistence
+- Flyway database migrations
+- Multi-environment setup (dev / int / prod)
+- Docker & docker-compose
+- Optional Nginx reverse proxy with HTTPS
+- CI/CD pipeline using GitHub Actions and GHCR
 
 ---
 
@@ -49,35 +57,37 @@ com.vaaskel
  ├── domain/       → Entities & domain logic
  ├── repository/   → Spring Data repositories
  ├── service/      → Business logic
- ├── security/     → Auth + authorization
+ ├── security/     → Authentication & authorization
  └── ui/           → Vaadin views, layouts, components
 ```
+
+The structure follows classic layered architecture principles with a clear separation of concerns.
 
 ---
 
 # 🐳 Docker & Environments
 
-Vaaskel includes three environments:
+Vaaskel defines three runtime environments:
 
-- **dev** — local development  
-- **int** — integration environment (`app_int`)  
-- **prod** — production environment (`app_prod`)  
+- **dev**  — local development
+- **int**  — integration environment (`app_int`)
+- **prod** — production environment (`app_prod`)
 
-The application containers (`app_int`, `app_prod`) use a Docker image hosted on **GitHub Container Registry (GHCR)**:
+Application containers (`app_int`, `app_prod`) use images published to **GitHub Container Registry (GHCR)**:
 
 ```yaml
 image: ghcr.io/${GHCR_OWNER}/vaaskel:latest
 ```
 
-## `.env` configuration for GHCR
+### `.env` configuration
 
 Create a `.env` file:
 
 ```env
-GHCR_OWNER=eneuwirt
+GHCR_OWNER=<GHCR_OWNER>
 ```
 
-You may change this if the project is forked or used under a different namespace.
+Adjust this value if the project is forked or hosted under a different namespace.
 
 ### Starting the stack
 
@@ -90,31 +100,31 @@ docker compose up -d
 
 # 🔐 GitHub Container Registry (GHCR)
 
-To pull images from GHCR on Windows, create permanent environment variables:
+To pull images from GHCR on Windows, configure credentials:
 
 ```powershell
 setx GITHUB_USERNAME "<YOUR GITHUB USERNAME>"
 setx GITHUB_TOKEN "<YOUR TOKEN WITH read:packages>"
 ```
 
-Then log in:
+Login:
 
 ```powershell
 $env:GITHUB_TOKEN | docker login ghcr.io -u $env:GITHUB_USERNAME --password-stdin
 ```
 
-Required permissions for the token:
+Required token scopes:
 
-- `read:packages` → pulling images  
-- `write:packages` → only needed if you push manually
+- `read:packages` — pulling images
+- `write:packages` — only required for manual pushes
 
-GitHub Actions uses its own internal token and does not rely on your local token.
+GitHub Actions uses its internal token automatically.
 
 ---
 
 # 🚀 Deployment Workflow
 
-This project follows a clean and modern deployment pipeline using **GitHub Actions → GHCR → docker-compose**.
+The deployment pipeline is intentionally simple and reproducible:
 
 ## 1️⃣ Push to GitHub
 
@@ -128,7 +138,7 @@ Whenever you push to **main**, GitHub Actions automatically:
 ghcr.io/${GHCR_OWNER}/vaaskel:latest
 ```
 
-## 2️⃣ Update your server / local environment
+## 2️⃣ Update runtime environment
 
 On your host machine (Windows, Linux, or a server):
 
@@ -139,40 +149,35 @@ docker compose up -d
 
 This will:
 
-- download the newest Docker image from GHCR  
-- restart only the containers whose images have changed  
+- download the newest Docker image from GHCR
+- restart only the containers whose images have changed
 
-## 3️⃣ Verify running containers
+## 3️⃣ Verify containers
 
 ```bash
 docker compose ps
 ```
 
-## 4️⃣ View logs
+## 4️⃣ Inspect logs
 
 ```bash
 docker logs app_int --follow
 ```
 
-This workflow ensures:
-
-- zero manual builds  
-- reproducible deployments  
-- clean separation of CI and runtime  
-- secure distribution via GHCR  
+This ensures clean separation between build and runtime, with zero manual image handling.
 
 ---
 
 # 🔐 HTTPS & Nginx Reverse Proxy
 
-Domains for proxy routing:
+Domain routing:
 
 ```
-https://vaaskel.test  → app_int  
+https://vaaskel.test  → app_int
 https://vaaskel.prod  → app_prod
 ```
 
-Configurations are in:
+Nginx configuration files are located in:
 
 ```
 scripts/nginx/
@@ -182,7 +187,7 @@ scripts/nginx/
 
 # 🔐 Certificate Generation
 
-Required certificates:
+Expected certificate files:
 
 ```
 scripts/nginx/ssl/vaaskel.test.pem
@@ -191,9 +196,13 @@ scripts/nginx/ssl/vaaskel.prod.pem
 scripts/nginx/ssl/vaaskel.prod-key.pem
 ```
 
+Self-signed certificates are sufficient for local and integration environments.
+
 ---
 
 # ⚙️ Development
+
+Run locally using the dev profile:
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
@@ -207,7 +216,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 mvn clean package -Pproduction
 ```
 
-Run:
+Run the artifact:
 
 ```bash
 java -jar target/vaaskel-*.jar
@@ -217,31 +226,85 @@ java -jar target/vaaskel-*.jar
 
 # 🔐 Security
 
-- User authentication  
-- Roles & permissions  
-- Password hashing  
-- Navigation guards  
+- Form-based authentication
+- Role-based authorization
+- Password hashing
+- Navigation guards
+- Secure defaults
+
+---
+
+# ✅ Walking Skeleton Status
+
+**Status:** ✔ Completed
+
+This repository intentionally represents a **finished walking skeleton**.
+
+It proves the technical viability of the system by providing a **minimal but complete end-to-end path** across all layers:
+
+- UI
+- Security
+- Business services
+- Persistence
+- Infrastructure
+
+No additional infrastructure work is required to start feature development.
+
+---
+
+# 🔁 Reference End-to-End Flow
+
+The canonical skeleton flow:
+
+1. Application startup via Docker
+2. User authentication
+3. Role-based authorization
+4. Domain interaction (e.g. user settings)
+5. Persistence to PostgreSQL
+6. Reload and verification
+
+This flow serves as the **baseline contract** for all future development.
+
+---
+
+# 🚧 Explicit Non-Goals
+
+The following topics are intentionally **out of scope** for the walking skeleton:
+
+- Business-specific features
+- Complex UI workflows
+- Public REST APIs
+- Performance tuning
+- Horizontal scaling
+- Cloud-specific infrastructure
+
+These belong to later feature phases.
+
+---
+
+# 🧭 Next Phase
+
+With the walking skeleton completed, the project is ready for:
+
+- Vertical feature slices
+- Domain-driven extensions
+- UI refinement
+- API exposure
+- Modularization
+
+All future work builds on a stable, proven foundation.
 
 ---
 
 # 🧭 Branching Strategy (GitHub Flow)
 
-- `main` → stable  
-- `feature/*` → new development  
-- `fix/*` → bug fixes  
-- PR → merge  
-
----
-
-# 🛣 Roadmap
-
-- REST API  
-- Admin console  
-- Modularization  
-- Cloud deployment  
+- `main`       → stable baseline
+- `feature/*`  → new development
+- `fix/*`      → bug fixes
+- Pull Request → merge into `main`
 
 ---
 
 # 📄 License
 
-MIT License  
+MIT License
