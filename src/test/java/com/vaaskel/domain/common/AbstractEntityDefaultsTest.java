@@ -1,7 +1,6 @@
 package com.vaaskel.domain.common;
 
 import com.vaaskel.domain.security.entity.User;
-import com.vaaskel.domain.security.entity.UserRoleType;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
 
