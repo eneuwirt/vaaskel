@@ -1,0 +1,33 @@
+.git
+.github
+.idea
+.vscode
+.settings
+.project
+.classpath
+*.iml
+.DS_Store
+
+# Local environment and generated data
+.env
+target/
+node_modules/
+schema.sql
+
+# Vaadin generated frontend artifacts
+src/main/frontend/generated/
+src/main/bundles/
+pnpmfile.js
+vite.generated.ts
+webpack.generated.js
+
+# Local test artifacts
+drivers/
+error-screenshots/
+
+# SSL certificates and private keys
+scripts/nginx/ssl/
+certs-local/
+*.key
+*.crt
+*.pem
