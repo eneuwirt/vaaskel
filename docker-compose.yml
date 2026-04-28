@@ -1,27 +1,11 @@
 services:
-    proxy:
-        container_name: reverse_proxy
-        build:
-           context: ./scripts/nginx
-           dockerfile: Dockerfile
-        restart: always
-        depends_on:
-            - app_int
-            - app_prod
-            - pgadmin
-        networks:
-            - vaaskel_net
-        ports:
-            - "80:80"
-            - "443:443"
-
 #    local_build:
 #        image: vaaskel
 #        build:
 #            context: .
 #            dockerfile: ./scripts/vaaskel/Dockerfile
 
-    app_int:
+    app:
         image: ghcr.io/${GHCR_OWNER}/vaaskel:latest
         container_name: app_int
         restart: always
@@ -29,28 +13,13 @@ services:
             - database
         environment:
             SPRING_PROFILES_ACTIVE: int
-            SPRING_DATASOURCE_URL: jdbc:postgresql://pg:5432/vaaskel_int
+            SPRING_DATASOURCE_URL: jdbc:postgresql://pg:5432/vaaskel
             SPRING_DATASOURCE_USERNAME: root
             SPRING_DATASOURCE_PASSWORD: root
         networks:
             - vaaskel_net
-        logging:
-            options:
-                max-size: "100M"
-
-    app_prod:
-        image: ghcr.io/${GHCR_OWNER}/vaaskel:latest
-        container_name: app_prod
-        restart: always
-        depends_on:
-            - database
-        environment:
-            SPRING_PROFILES_ACTIVE: prod
-            SPRING_DATASOURCE_URL: jdbc:postgresql://pg:5432/vaaskel_prod
-            SPRING_DATASOURCE_USERNAME: root
-            SPRING_DATASOURCE_PASSWORD: root
-        networks:
-            - vaaskel_net
+        ports:
+            - "8081:8080"
         logging:
             options:
                 max-size: "100M"
@@ -76,29 +45,9 @@ services:
           timeout: 5s
           retries: 5
 
-    pgadmin:
-        container_name: pgadmin
-        image: dpage/pgadmin4:latest
-        restart: always
-        environment:
-            PGADMIN_DEFAULT_EMAIL: a@a.com
-            PGADMIN_DEFAULT_PASSWORD: root
-        depends_on:
-            - database
-        ports:
-            - "5050:80"
-        networks:
-            - vaaskel_net
-        volumes:
-            - pgadmin_data:/var/lib/pgadmin
-        logging:
-            options:
-                max-size: "100M"
-
 networks:
     vaaskel_net:
         name: vaaskel_net
 
 volumes:
     pgdata:
-    pgadmin_data:

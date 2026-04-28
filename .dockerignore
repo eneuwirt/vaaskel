@@ -26,7 +26,6 @@ drivers/
 error-screenshots/
 
 # SSL certificates and private keys
-scripts/nginx/ssl/
 certs-local/
 *.key
 *.crt

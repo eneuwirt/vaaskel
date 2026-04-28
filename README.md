@@ -20,8 +20,6 @@ This is **not** a prototype and **not** a demo. It is a **finished architectural
 - [Docker & Environments](#-docker--environments)
 - [GitHub Container Registry (GHCR)](#-github-container-registry-ghcr)
 - [Deployment Workflow](#-deployment-workflow)
-- [HTTPS & Nginx Reverse Proxy](#-https--nginx-reverse-proxy)
-- [Certificate Generation](#-certificate-generation)
 - [Development](#️-development)
 - [Production Build](#-production-build)
 - [Security](#-security)
@@ -44,7 +42,6 @@ This is **not** a prototype and **not** a demo. It is a **finished architectural
 - Flyway database migrations
 - Multi-environment setup (dev / int / prod)
 - Docker & docker-compose
-- Optional Nginx reverse proxy with HTTPS
 - CI/CD pipeline using GitHub Actions and GHCR
 
 ---
@@ -94,6 +91,15 @@ Adjust this value if the project is forked or hosted under a different namespace
 ```bash
 docker compose pull
 docker compose up -d
+```
+
+### Runtime endpoints
+
+The walking skeleton exposes the application containers directly:
+
+```text
+http://localhost:8081  -> app_int
+http://localhost:8082  -> app_prod
 ```
 
 ---
@@ -165,38 +171,6 @@ docker logs app_int --follow
 ```
 
 This ensures clean separation between build and runtime, with zero manual image handling.
-
----
-
-# 🔐 HTTPS & Nginx Reverse Proxy
-
-Domain routing:
-
-```
-https://vaaskel.test  → app_int
-https://vaaskel.prod  → app_prod
-```
-
-Nginx configuration files are located in:
-
-```
-scripts/nginx/
-```
-
----
-
-# 🔐 Certificate Generation
-
-Expected certificate files:
-
-```
-scripts/nginx/ssl/vaaskel.test.pem
-scripts/nginx/ssl/vaaskel.test-key.pem
-scripts/nginx/ssl/vaaskel.prod.pem
-scripts/nginx/ssl/vaaskel.prod-key.pem
-```
-
-Self-signed certificates are sufficient for local and integration environments.
 
 ---
 

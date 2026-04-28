@@ -64,7 +64,6 @@ src/main/frontend/index.html
 schema.sql
 
 # SSL / Zertifikate / private keys
-scripts/nginx/ssl/
 certs-local/
 *.key
 *.crt
