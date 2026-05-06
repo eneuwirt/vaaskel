@@ -37,7 +37,7 @@ public interface UserService {
     /**
      * Returns the total number of users filtered by username.
      *
-     * @param username username filter (exact match)
+     * @param username username filter (case-insensitive contains match)
      * @return count of users matching the filter
      */
     long countUsersByUsername(String username);
@@ -45,7 +45,7 @@ public interface UserService {
     /**
      * Fetches a slice of users filtered by username for paginated UI usage.
      *
-     * @param username username filter (exact match)
+     * @param username username filter (case-insensitive contains match)
      * @param offset   zero-based offset of the first row
      * @param limit    maximum number of rows to return
      * @return list of user DTOs in the requested range

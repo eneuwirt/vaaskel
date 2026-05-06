@@ -15,6 +15,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.UI;
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.service.user.UserService;
 import com.vaaskel.ui.util.DateTimeRenderers;
@@ -35,6 +36,10 @@ public class UserManagementView extends Div {
 
     // Data provider with filter support
     private ConfigurableFilterDataProvider<UserDto, Void, String> dataProvider;
+
+    public static void showList(UI ui) {
+        ui.navigate(UserManagementView.class);
+    }
 
     public UserManagementView(UserService userService) {
         this.userService = userService;
@@ -147,12 +152,10 @@ public class UserManagementView extends Div {
     }
 
     private void navigateToNewUser() {
-        // Navigate to the new user creation view (edit view in "create" mode)
-        getUI().ifPresent(ui -> ui.navigate("admin/users/new"));
+        getUI().ifPresent(UserEditView::showNew);
     }
 
     private void navigateToEditUser(Long userId) {
-        // Navigate to existing user edit view
-        getUI().ifPresent(ui -> ui.navigate("admin/users/" + userId));
+        getUI().ifPresent(ui -> UserEditView.showUser(ui, userId));
     }
 }

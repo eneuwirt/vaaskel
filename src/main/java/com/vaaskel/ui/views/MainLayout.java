@@ -1,10 +1,17 @@
 package com.vaaskel.ui.views;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.contextmenu.MenuItem;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Footer;
+import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Header;
+import com.vaadin.flow.component.html.Hr;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.SvgIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
@@ -14,11 +21,11 @@ import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Layout;
-import com.vaadin.flow.server.auth.AccessAnnotationChecker;
 import com.vaadin.flow.server.menu.MenuConfiguration;
 import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaaskel.domain.security.entity.User;
+import com.vaaskel.domain.settings.ThemePreference;
 import com.vaaskel.security.AuthenticatedUser;
 import com.vaaskel.service.settings.UserSettingsService;
 import com.vaaskel.ui.theme.ThemeApplier;
@@ -35,13 +42,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     private H1 viewTitle;
 
     private final AuthenticatedUser authenticatedUser;
-    private final AccessAnnotationChecker accessChecker;
 
-    public MainLayout(UserSettingsService userSettingsService, AuthenticatedUser authenticatedUser,
-            AccessAnnotationChecker accessChecker) {
+    public MainLayout(UserSettingsService userSettingsService, AuthenticatedUser authenticatedUser) {
         this.userSettingsService = userSettingsService;
         this.authenticatedUser = authenticatedUser;
-        this.accessChecker = accessChecker;
 
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
@@ -73,11 +77,14 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
         List<MenuEntry> menuEntries = MenuConfiguration.getMenuEntries();
         menuEntries.forEach(entry -> {
+            SideNavItem item;
             if (entry.icon() != null) {
-                nav.addItem(new SideNavItem(entry.title(), entry.path(), new SvgIcon(entry.icon())));
+                item = new SideNavItem(entry.title(), entry.path(), new SvgIcon(entry.icon()));
             } else {
-                nav.addItem(new SideNavItem(entry.title(), entry.path()));
+                item = new SideNavItem(entry.title(), entry.path());
             }
+            item.setMatchNested(true);
+            nav.addItem(item);
         });
 
         return nav;
@@ -107,11 +114,11 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             MenuItem themeRoot = userName.getSubMenu().addItem(getTranslation("main.user.theme"));
 
             themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.system"),
-                    e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.SYSTEM));
+                    e -> setTheme(user, ThemePreference.SYSTEM));
             themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.light"),
-                    e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.LIGHT));
+                    e -> setTheme(user, ThemePreference.LIGHT));
             themeRoot.getSubMenu().addItem(getTranslation("main.user.theme.dark"),
-                    e -> setTheme(user, com.vaaskel.domain.settings.ThemePreference.DARK));
+                    e -> setTheme(user, ThemePreference.DARK));
 
             userName.getSubMenu().addComponent(new Hr());
             userName.getSubMenu().addItem(getTranslation("main.user.signout"), e -> authenticatedUser.logout());
@@ -126,7 +133,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         return layout;
     }
 
-    private void setTheme(User user, com.vaaskel.domain.settings.ThemePreference pref) {
+    private void setTheme(User user, ThemePreference pref) {
         userSettingsService.updateTheme(user, pref);
         getUI().ifPresent(ui -> ThemeApplier.apply(ui, pref));
     }

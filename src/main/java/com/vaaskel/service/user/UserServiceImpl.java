@@ -6,12 +6,18 @@ import com.vaaskel.domain.security.entity.UserRole;
 import com.vaaskel.domain.security.entity.UserRoleType;
 import com.vaaskel.repository.security.UserRepository;
 import com.vaaskel.repository.security.UserRoleRepository;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -27,6 +33,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDto> findUsers(int offset, int limit) {
         if (limit <= 0)
             return List.of();
@@ -34,15 +41,17 @@ public class UserServiceImpl implements UserService {
 
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.ASC, "id"));
 
-        return userRepository.findAll(pageable).stream().map(this::toDtoBasic).toList();
+        return userRepository.findAllBy(pageable).stream().map(this::toDtoBasic).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countUsers() {
         return userRepository.count();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDto> findUsersByUsername(String username, int offset, int limit) {
         if (limit <= 0)
             return List.of();
@@ -59,12 +68,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countUsersByUsername(String username) {
         String filter = username != null ? username.trim() : "";
         return filter.isEmpty() ? countUsers() : userRepository.countByUsernameContainingIgnoreCase(filter);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<UserDto> findUserById(Long id) {
         if (id == null)
             return Optional.empty();
@@ -179,6 +190,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Set<UserRoleType> getUserRoles(Long userId) {
         if (userId == null)
             return EnumSet.noneOf(UserRoleType.class);

@@ -1,12 +1,13 @@
 package com.vaaskel.ui.views.admin;
 
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaaskel.api.user.UserDto;
 import com.vaaskel.domain.security.entity.UserRoleType;
 import com.vaaskel.service.user.UserService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -24,6 +25,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.RouteParam;
+import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
@@ -39,7 +42,6 @@ import java.util.function.Consumer;
 @Menu(order = 11, icon = LineAwesomeIconUrl.USER_EDIT_SOLID)
 @RolesAllowed("ADMIN")
 public class UserEditView extends VerticalLayout implements BeforeEnterObserver {
-    private static final String ROUTE_USERS = "admin/users";
     private static final String PARAM_USER_ID = "userId";
 
     private final UserService userService;
@@ -68,6 +70,14 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     private final TextField infoUsername = new TextField();
     private final TextField infoCreatedAt = new TextField();
     private final TextField infoChangedAt = new TextField();
+
+    public static void showNew(UI ui) {
+        ui.navigate(UserEditView.class, new RouteParameters(new RouteParam(PARAM_USER_ID, "new")));
+    }
+
+    public static void showUser(UI ui, Long userId) {
+        ui.navigate(UserEditView.class, new RouteParameters(new RouteParam(PARAM_USER_ID, String.valueOf(userId))));
+    }
 
     public UserEditView(UserService userService) {
         this.userService = userService;
@@ -252,7 +262,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
         populateInfoBar(saved);
 
         if (createMode && saved.getId() != null) {
-            getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS + "/" + saved.getId()));
+            getUI().ifPresent(ui -> showUser(ui, saved.getId()));
         } else {
             navigateBackToList();
         }
@@ -278,7 +288,7 @@ public class UserEditView extends VerticalLayout implements BeforeEnterObserver 
     }
 
     private void navigateBackToList() {
-        getUI().ifPresent(ui -> ui.navigate(ROUTE_USERS));
+        getUI().ifPresent(UserManagementView::showList);
     }
 
     private void clearInfoBar() {

@@ -12,7 +12,7 @@ import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 @AnonymousAllowed
-@Route(value = "login")
+@Route(value = "login", autoLayout = false)
 public class LoginView extends LoginOverlay implements BeforeEnterObserver, HasDynamicTitle {
 
     private final AuthenticatedUser authenticatedUser;
